@@ -14,7 +14,7 @@ class TensorflowPredictor(TensorflowPredictorBase):
         return tf.keras.models.load_model(path)
 
     def predict(self, input_features: dict[str, list]) -> tf.Tensor:
-        return self._model({k: np.array(v) for k, v in input_features.items()})
+        return self._model({k: np.array(v) for k, v in input_features.items()})[1].numpy()
 
     def reload_model(self):
         self._model = self.load_model(self.model_path)
