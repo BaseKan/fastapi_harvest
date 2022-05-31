@@ -1,4 +1,5 @@
 from typing import Any, Optional
+from random import sample
 
 import pandas as pd
 
@@ -30,6 +31,9 @@ class DataLoader(DataLoaderBase):
 
     def get_movies(self) -> list[str]:
         return self._all_movies
+
+    def get_random_movies(self, n: int) -> list[str]:
+        return sample(self._all_movies, n)
 
     def post_data(self, new_data: ViewResponseModel):
         self._user_view_data = self._user_view_data.append(pd.DataFrame(new_data.dict(), index=[0]))
