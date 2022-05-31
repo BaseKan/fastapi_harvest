@@ -22,5 +22,5 @@ async def get_random_movies(n: int = Path(gt=0), data: DataLoader = Depends(get_
 
 @router.get("/recommend/{user}{n}")
 async def recommend_movies(user: str, n: int, predictor: TensorflowPredictor = Depends(get_predictor)):
-    print(predictor.predict({"user_id": [user]}))
-    return {"message": predictor.predict({"user_id": [user]})}
+    print(predictor.predict({"user_id": [user]})[0][0:n])
+    return {"message": predictor.predict({"user_id": [user]})[0][0:n]}
