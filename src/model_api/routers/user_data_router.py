@@ -16,7 +16,8 @@ async def get_users(data: DataLoader = Depends(get_data)):
 
 
 @router.get("/{user}", response_model=list[ViewResponseModel])
-async def get_user_view_data(user: int = Path(..., title="The user ID", ge=1), data: DataLoader = Depends(get_data)):
+async def get_user_view_data(user: int = Path(..., description="The user ID", ge=1),
+                             data: DataLoader = Depends(get_data)):
     return data.query_data(user=str(user)).to_dict("records")
 
 

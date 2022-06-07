@@ -7,6 +7,7 @@ from model_api.dataloaders import DataLoader
 from model_api.predictors import TensorflowPredictor
 from model_api.dependencies import get_data, get_predictor, data_loader
 
+
 router = APIRouter(prefix="/movies",
                    tags=["movies"],
                    dependencies=[Depends(get_data)],
