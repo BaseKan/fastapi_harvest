@@ -3,5 +3,6 @@ numpy
 pydantic
 pandas
 fastapi
+gunicorn
 uvicorn
 tensorflow
