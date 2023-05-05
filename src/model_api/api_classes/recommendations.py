@@ -9,6 +9,6 @@ class RecommendationsResponseModel(BaseModel):
         schema_extra = {
             "example": {
                 "user_id": "1",
-                "movies": ["Home Alone (1990)","Titanic (1997)"]
+                "movies": ["Home Alone (1990)", "Titanic (1997)"]
             }
         }

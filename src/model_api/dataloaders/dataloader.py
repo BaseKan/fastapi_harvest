@@ -1,49 +1,84 @@
-from typing import Any, Optional
-from random import sample
+import os
+from typing import Any
+import sqlite3
+from itertools import repeat
 
 import pandas as pd
+from pydantic import BaseModel
 
-from model_api.base_classes import DataLoaderBase
-from model_api.api_classes import ViewResponseModel
-from model_api.tensorflow_base_classes import TensorflowPredictorBase
+import tensorflow_datasets as tfds
 
 
-class DataLoader(DataLoaderBase):
-    data_path: Optional[str] = ""
-    _all_users: list[str]
-    _all_movies: list[str]
-    _user_view_data: pd.DataFrame
+class DataLoader(BaseModel):
+    db_path: str = 'data/movielens.db'
+    force_rebuild_db: bool = False
 
-    def __init__(self, predictor_model: TensorflowPredictorBase, **data):
+    def __init__(self, **data):
         super().__init__(**data)
-        self._all_users = predictor_model.model.query_model.get_layer(
-            "embedding_model").get_layer("sequential").get_layer("string_lookup").get_vocabulary()[1:]
-        self._all_movies = list(predictor_model.model.identifiers.numpy())
-        self._user_view_data = pd.DataFrame({"user": ["1", "2"],
-                                             "movie": ["Winnie the Pooh and the Blustery Day (1968)",
-                                                       "Home Alone (1990)"]})
+        if not os.path.isfile(self.db_path) or self.force_rebuild_db:
+            self.init_db_from_tfds()
 
-    def get_data(self) -> pd.DataFrame:
-        return self._user_view_data
+    def init_db_from_tfds(self):
+        movies, movies_info = tfds.load(name='movielens/100k-movies', with_info=True)
+        ratings, ratings_info = tfds.load(name='movielens/100k-ratings', with_info=True)
+        df_movies = tfds.as_dataframe(ds=movies['train'], ds_info=movies_info)
+        df_movies['movie_id'] = df_movies['movie_id'].astype(int)
+        df_movies['movie_title'] = df_movies['movie_title'].astype(str)
 
-    def get_users(self) -> list[str]:
-        return self._all_users
+        df_genres = pd.DataFrame({'genre_id': [i for i in range(len(movies_info.features['movie_genres'].names))],
+                                  'genre_name': movies_info.features['movie_genres'].names})
 
-    def get_movies(self) -> list[str]:
-        return self._all_movies
+        df_users_ratings = tfds.as_dataframe(ds=ratings['train'], ds_info=ratings_info).drop(columns=['movie_genres',
+                                                                                                      'movie_title'])
+        df_users_ratings['movie_id'] = df_users_ratings['movie_id'].astype(int)
+        df_users_ratings['user_id'] = df_users_ratings['user_id'].astype(int)
+        df_users_ratings['user_occupation_text'] = df_users_ratings['user_occupation_text'].astype(str)
+        df_users_ratings['user_zip_code'] = df_users_ratings['user_zip_code'].astype(str)
 
-    def get_random_movies(self, n: int) -> list[str]:
-        return sample(self._all_movies, n)
+        df_users = df_users_ratings.loc[:, ['user_id', 'bucketized_user_age', 'raw_user_age', 'user_gender',
+                                            'user_occupation_label', 'user_occupation_text',
+                                            'user_zip_code']].drop_duplicates()
 
-    def post_data(self, new_data: ViewResponseModel):
-        self._user_view_data = self._user_view_data.append(pd.DataFrame(new_data.dict(), index=[0]))
+        df_ratings = df_users_ratings.loc[:, ['user_id', 'movie_id', 'user_rating']].drop_duplicates()
+        df_ratings['rating_id'] = df_ratings.index
 
-    def set_data(self, key: int, col: str, value: Any):
-        self._user_view_data.loc[self._user_view_data["user"] == key, col] = value
+        if not os.path.isdir(self.db_path.split('/')[0]):
+            os.mkdir(self.db_path.split('/')[0])
 
-    def query_data(self, **kwargs) -> pd.DataFrame:
-        return self._user_view_data.query(
-            " and ".join(k + "==" + ("'" + v + "'" if type(v) == str else str(v)) for k, v in kwargs.items()))
+        with sqlite3.connect(self.db_path) as conn:
+            df_movies.to_sql('movies', conn, if_exists='replace', index=False)
+            df_genres.to_sql('genres', conn, if_exists='replace', index=False)
+            df_users.to_sql('users', conn, if_exists='replace', index=False)
+            df_ratings.to_sql('ratings', conn, if_exists='replace', index=False)
 
-    def delete_data(self, key):
-        self._user_view_data = self._user_view_data.loc[self._user_view_data["user"] != key]
+    def query_data(self, query: str, params: tuple[str] | None = None):
+        with sqlite3.connect(self.db_path) as conn:
+            return pd.read_sql(query, conn, params=params)
+
+    def get_full_table(self, table: str) -> pd.DataFrame:
+        return self.query_data(query=f'select * from {table}')
+
+    def random_sample_table(self, table: str, n: int):
+        return self.query_data(query=f'select * from {table} order by random() limit {n};')
+
+    def query_on_col_value(self, table: str, col_name: str, col_value: str):
+        sql = f'select * from {table} where {col_name}=?'
+        return self.query_data(query=sql, params=(col_value,))
+
+    def insert_data(self, table: str, data: dict[str, Any]):
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            sql = f'insert into {table}({", ".join(list(data.keys()))}) values({",".join(repeat("?", len(data)))})'
+            cur.execute(sql, tuple(data.values()))
+
+    def update_data(self, table: str, id_tuple: tuple[str, Any], data: dict[str, Any]):
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            sql = f'update {table} set {"= ? ,".join(list(data.keys()))} = ? where {id_tuple[0]} = ?'
+            cur.execute(sql, tuple(data.values()) + (id_tuple[1],))
+
+    def delete_data(self, table: str, id_tuple: tuple[str, Any]):
+        with sqlite3.connect(self.db_path) as conn:
+            cur = conn.cursor()
+            sql = f'DELETE FROM {table} WHERE {id_tuple[0]}=?'
+            cur.execute(sql, (id_tuple[1],))

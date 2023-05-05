@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, Path, HTTPException
 
 from model_api.dataloaders import DataLoader
 from model_api.dependencies import get_data
-from model_api.api_classes import ViewResponseModel
+from model_api.api_classes import UserResponseModel, RatingResponseModel
 
 router = APIRouter(prefix="/users",
                    tags=["users"],
@@ -12,25 +12,25 @@ router = APIRouter(prefix="/users",
 
 @router.get("/")
 async def get_users(data: DataLoader = Depends(get_data)):
-    return {"message": data.get_users()}
+    return {"message": data.get_full_table(table='users').to_dict("records")}
 
 
-@router.get("/{user}", response_model=list[ViewResponseModel])
-async def get_user_view_data(user: int = Path(..., description="The user ID", ge=1),
-                             data: DataLoader = Depends(get_data)):
-    return data.query_data(user=str(user)).to_dict("records")
+@router.get("/{user}", response_model=list[UserResponseModel])
+async def get_user_data(user: int = Path(..., description="The user ID", ge=1),
+                        data: DataLoader = Depends(get_data)):
+    return data.query_on_col_value(table='users', col_name='user_id', col_value=str(user)).to_dict("records")
 
 
-@router.post("/add_view/", responses={404: {"description": "One or more users or movies were invalid."}})
-async def add_user_view_data(view_data: list[ViewResponseModel], data: DataLoader = Depends(get_data)):
-    users = data.get_users()
-    movies = data.get_movies()
-    for view in view_data:
-        if view.user not in users or view.movie not in movies:
-            raise HTTPException(status_code=404, detail="One or more users or movies were invalid.")
+@router.post("/add_user_rating/", responses={404: {"description": "One or more users or movies were invalid."}})
+async def add_user_rating(user_ratings: list[RatingResponseModel], data: DataLoader = Depends(get_data)):
+    #TODO: VALIDATE IF USER AND MOVIE EXIST
+    new_rating_id = data.query_data('select max(rating_id) from ratings').loc[0, :][0]
 
-    for view in view_data:
-        data.post_data(view)
+    for user_rating in user_ratings:
+        new_rating_id += 1
+        data_dict = user_rating.dict()
+        data_dict['rating_id'] = new_rating_id
+        data.insert_data(table='ratings', data=data_dict)
 
     return {"message": "Data successfully added!"}
 

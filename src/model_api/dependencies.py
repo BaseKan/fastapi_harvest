@@ -3,7 +3,7 @@ from model_api.predictors import TensorflowPredictor
 
 
 predictor = TensorflowPredictor(model_path="./model/index")
-data_loader = DataLoader(predictor_model=predictor)
+data_loader = DataLoader()
 
 
 async def get_predictor() -> TensorflowPredictor:

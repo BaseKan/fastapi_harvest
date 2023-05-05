@@ -13,17 +13,18 @@ router = APIRouter(prefix="/movies",
                    dependencies=[Depends(get_data)],
                    responses={404: {"description": "Not Found"}})
 
-UserEnum = Enum("UserEnum", {value: value for value in data_loader.get_users()}, type=str)
+UserEnum = Enum("UserEnum", {str(value): str(value) for value in list(data_loader.get_full_table(table='users').user_id)},
+                type=str)
 
 
 @router.get("/")
 async def get_movies(data: DataLoader = Depends(get_data)):
-    return {"message": data.get_movies()}
+    return {"message": data.get_full_table(table='movies').to_dict("records")}
 
 
 @router.get("/random/{n}")
 async def get_random_movies(n: int = Path(gt=0), data: DataLoader = Depends(get_data)):
-    return {"message": data.get_random_movies(n)}
+    return {"message": data.random_sample_table(table='movies', n=n).to_dict("records")}
 
 
 @router.get("/recommend/{user}/{n}", responses={422: {"description": "The user id was invalid."}})
