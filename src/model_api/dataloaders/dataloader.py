@@ -51,7 +51,7 @@ class DataLoader(BaseModel):
             df_users.to_sql('users', conn, if_exists='replace', index=False)
             df_ratings.to_sql('ratings', conn, if_exists='replace', index=False)
 
-    def query_data(self, query: str, params: tuple[str] | None = None):
+    def query_data(self, query: str, params: list[Any] | None = None):
         with sqlite3.connect(self.db_path) as conn:
             return pd.read_sql(query, conn, params=params)
 
@@ -61,9 +61,9 @@ class DataLoader(BaseModel):
     def random_sample_table(self, table: str, n: int):
         return self.query_data(query=f'select * from {table} order by random() limit {n};')
 
-    def query_on_col_value(self, table: str, col_name: str, col_value: str):
+    def query_on_col_value(self, table: str, col_name: str, col_value: Any):
         sql = f'select * from {table} where {col_name}=?'
-        return self.query_data(query=sql, params=(col_value,))
+        return self.query_data(query=sql, params=[col_value])
 
     def insert_data(self, table: str, data: dict[str, Any]):
         with sqlite3.connect(self.db_path) as conn:

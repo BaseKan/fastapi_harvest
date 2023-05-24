@@ -27,6 +27,20 @@ async def get_random_movies(n: int = Path(gt=0), data: DataLoader = Depends(get_
     return {"message": data.random_sample_table(table='movies', n=n).to_dict("records")}
 
 
+@router.get("/ratings/")
+async def query_movies(min_rating: float = 0.0, max_rating: float = 5.0, data: DataLoader = Depends(get_data)):
+    df = data.query_data(
+        query="""select M.movie_title, avg(R.user_rating) as rating 
+                 from movies M join ratings R 
+                 on M.movie_id=R.movie_id 
+                 group by M.movie_title
+                 having rating >= ? and rating <= ?
+                 """,
+        params=[min_rating, max_rating]
+    )
+    return df.to_dict("records")
+
+
 @router.get("/recommend/{user}/{n}", responses={422: {"description": "The user id was invalid."}})
 async def recommend_movies(user: UserEnum, n: int, predictor: TensorflowPredictor = Depends(get_predictor)):
     return {"message": predictor.predict({"user_id": [user]})[0][0:n]}

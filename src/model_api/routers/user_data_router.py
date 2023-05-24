@@ -23,7 +23,6 @@ async def get_user_data(user: int = Path(..., description="The user ID", ge=1),
 
 @router.post("/add_user_rating/", responses={404: {"description": "One or more users or movies were invalid."}})
 async def add_user_rating(user_ratings: list[RatingResponseModel], data: DataLoader = Depends(get_data)):
-    #TODO: VALIDATE IF USER AND MOVIE EXIST
     new_rating_id = data.query_data('select max(rating_id) from ratings').loc[0, :][0]
 
     for user_rating in user_ratings:
