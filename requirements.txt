@@ -6,3 +6,5 @@ fastapi
 gunicorn
 uvicorn
 tensorflow
+tensorflow-datasets
+jinja2

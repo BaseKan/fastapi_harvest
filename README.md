@@ -21,5 +21,6 @@ docker build -t harvest_api .
 
 Run:
 ```commandline
-docker run -d --name harvest_api_container -p 80:80 harvest_api
+mkdir logs
+docker run -d --name harvest_api_container -p 80:80 -v /path/to/repo/logs:/code/logs harvest_api
 ```
