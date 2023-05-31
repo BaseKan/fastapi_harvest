@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-from typing import Any
+from datetime import timedelta
+from typing import Any, Annotated
 
 from fastapi import APIRouter, Depends, Path, HTTPException
 from fastapi.responses import JSONResponse
@@ -15,6 +15,7 @@ from model_api.utils.authentication import authenticate_user
 from model_api.utils.authentication import token_exception
 from model_api.utils.authentication import create_access_token
 from model_api.utils.authentication import get_current_user
+from model_api.utils.authentication import Token
 
 router = APIRouter(prefix="/users",
                    tags=["users"],
@@ -60,43 +61,44 @@ async def update_password(user_id: int, password: str, data: DataLoader = Depend
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content={"Message": "Created user successfully",
-                 "User details": jsonable_encoder(user)
+                 "User details": jsonable_encoder(user.to_dict('records'))
                  }
     )
 
 
-@router.post("/token")
-async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()) -> dict[str, str]:
+@router.post("/token", response_model=Token)
+async def login_for_access_token(data: Annotated[DataLoader, Depends(get_data)],
+                                 form_data: OAuth2PasswordRequestForm = Depends()) -> dict[str, str]:
     "Creates and returns an access token (JWT) when user is authenticated."
 
-    user = authenticate_user(user_id=form_data.username,
-                             password=form_data.password
-                             )
-    
-    if not user:
+    user = authenticate_user(user_id=int(form_data.username),
+                             password=form_data.password,
+                             dataloader=data)
+
+    if user.empty:
         raise token_exception()
     
     token_expires = timedelta(minutes=20)
-    token = create_access_token(user.name, 
-                                user.id, 
+    token = create_access_token(data={'sub': str(user.user_id[0])},
                                 expires_delta=token_expires)
     
-    return {"token": token}
+    return {"access_token": token, "token_type": "bearer"}
 
 
 @router.get("/secure_ratings/")
 async def read_ratings_by_user(user_id: int = Depends(get_current_user),
                                data: DataLoader = Depends(get_data)
-                               ) -> dict[str, Any]:
-     "Returns ratings by the current user."
-     if user_id is None:
-         raise HTTPException(status_code=404, detail="User not found")
-     
-     df = data.query_data(
-        query=f"""select R.movie_id, R.user_rating
-                 from ratings R
-                 where R.user_id = {user_id}
-                 """
-                 )
-     
-     return df.to_dict("ratings")
+                               ):
+    "Returns ratings by the current user."
+    if user_id is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    df = data.query_data(
+            query=f"""select R.movie_id, R.user_rating
+                     from ratings R
+                     where R.user_id = {user_id}
+                     """
+                     )
+    print(df.to_dict("records"))
+
+    return df.to_dict("records")
