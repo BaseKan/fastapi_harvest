@@ -88,7 +88,7 @@ async def login_for_access_token(data: Annotated[DataLoader, Depends(get_data)],
 @router.get("/secure_ratings/")
 async def read_ratings_by_user(user_id: int = Depends(get_current_user),
                                data: DataLoader = Depends(get_data)
-                               ):
+                               ) -> JSONResponse:
     "Returns ratings by the current user."
     if user_id is None:
         raise HTTPException(status_code=404, detail="User not found")
@@ -99,6 +99,10 @@ async def read_ratings_by_user(user_id: int = Depends(get_current_user),
                      where R.user_id = {user_id}
                      """
                      )
-    print(df.to_dict("records"))
-
-    return df.to_dict("records")
+    
+    return JSONResponse(
+        status_code=status.HTTP_202_ACCEPTED,
+        content={"Message": f"Recommendations for user {user_id}",
+                 "Recommendations": jsonable_encoder(df.to_dict("records")[:5])
+                 }
+    )
