@@ -32,7 +32,6 @@ async def get_users(data: DataLoader = Depends(get_data)):
 async def get_user_data(user: int = Path(..., description="The user ID", ge=1),
                         data: DataLoader = Depends(get_data)):
     return data.query_on_col_value(table='users', col_name='user_id', col_value=str(user)).to_dict("records")
-<<<<<<< HEAD
 
 
 @router.post("/add_user_rating/", responses={404: {"description": "One or more users or movies were invalid."}})
@@ -107,5 +106,3 @@ async def read_ratings_by_user(user_id: int = Depends(get_current_user),
                  "Recommendations": jsonable_encoder(df.to_dict("records")[:5])
                  }
     )
-=======
->>>>>>> master
