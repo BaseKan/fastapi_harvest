@@ -10,7 +10,6 @@ from model_api.dependencies import get_data, get_predictor, data_loader
 
 router = APIRouter(prefix="/movies",
                    tags=["movies"],
-                   dependencies=[Depends(get_data)],
                    responses={404: {"description": "Not Found"}})
 
 UserEnum = Enum("UserEnum", {str(value): str(value) for value in list(data_loader.get_full_table(table='users').user_id)},
