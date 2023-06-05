@@ -43,9 +43,9 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3, ):
         [[x for x in ratings_test.take(1)][0]['user_id'].numpy()])}
 
     _, titles = index({k: np.array(v) for k, v in input_features.items()})
+    print(titles)
 
-    tf.saved_model.save(index, "./model/index")
-
+    index.save("./model/index")
 
 if __name__ == '__main__':
     retrain()
