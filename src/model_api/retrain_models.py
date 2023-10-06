@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_recommenders as tfrs
 
-from model_api.models.embedding_models import movie_model, user_model, ratings_train, ratings_test, movies_ds
+from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
 
 MODEL_DIR = './model/'
@@ -12,8 +12,13 @@ RETRIEVAL_CHECKPOINT_PATH = os.path.join(MODEL_DIR, 'retrieval_model', 'retrieva
 # See: https://www.tensorflow.org/recommenders/examples/basic_retrieval
 
 
-def retrain(from_checkpoint: bool = True, epochs: int = 3, ):
-    retrieval_model = RetrievalModel(user_model, movie_model)
+def retrain(from_checkpoint: bool = True, epochs: int = 3, dataset_usage_percentage: float = 0.5):
+    users, movies = get_vocabulary_datasets()
+    user_model, movie_model = create_embedding_models(users, movies)
+
+    ratings_train, ratings_test, movies_ds = process_training_data(movies, dataset_usage_percentage)
+
+    retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
     retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=0.1))
 
     cached_train = ratings_train.shuffle(100_000).batch(8192).cache()
@@ -46,6 +51,7 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3, ):
     print(titles)
 
     index.save("./model/index")
+
 
 if __name__ == '__main__':
     retrain()
