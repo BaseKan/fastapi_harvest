@@ -10,7 +10,8 @@ router = APIRouter(prefix="/movies",
                    responses={404: {"description": "Not Found"}})
 
 
-UserEnum = Enum("UserEnum", {str(value): str(value) for value in list(data_loader.get_full_table(table='users').user_id)},
+UserEnum = Enum("UserEnum", {str(value): str(value)
+                             for value in list(data_loader.get_full_table(table='users').user_id)},
                 type=str)
 
 

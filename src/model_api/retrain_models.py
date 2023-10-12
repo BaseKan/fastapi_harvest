@@ -54,6 +54,7 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
     print(titles)
 
     index.save("./model/index")
+
     with open(os.path.join(MODEL_DIR, 'retrieval_training_parameters.txt'), 'w') as file:
         file.writelines([f'from_checkpoint: {from_checkpoint}\n',
                          f'epochs: {epochs}\n',
