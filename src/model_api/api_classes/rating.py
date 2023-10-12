@@ -11,11 +11,13 @@ class RatingResponseModel(BaseModel):
     def validate_user_id(cls, v):
         if data_loader.query_on_col_value(table='users', col_name='user_id', col_value=str(v)).empty:
             raise ValueError('Invalid user_id.')
+        return v
 
     @validator('movie_id')
     def validate_movie_id(cls, v):
         if data_loader.query_on_col_value(table='movies', col_name='movie_id', col_value=str(v)).empty:
             raise ValueError('Invalid movie_id.')
+        return v
 
     class Config:
         schema_extra = {
