@@ -101,7 +101,7 @@ async def read_ratings_by_user(user_id: int = Depends(get_current_user),
     
     return JSONResponse(
         status_code=status.HTTP_202_ACCEPTED,
-        content={"Message": f"Recommendations for user {user_id}",
-                 "Recommendations": jsonable_encoder(df.to_dict("records")[:5])
+        content={"Message": f"Movies rated by user {user_id}",
+                 "Ratings": jsonable_encoder(df.to_dict("records"))
                  }
     )
