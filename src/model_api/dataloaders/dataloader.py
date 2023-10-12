@@ -78,6 +78,10 @@ class DataLoader(BaseModel):
         n_rows = self.query_data(query=f'select count(*) from {table};').values[0][0] * percentage
         return self.query_data(query=f'select * from {table} limit {n_rows};')
 
+    def get_ratings_id_range(self, first_id: int, last_id: int):
+        return self.query_data(query='select * from ratings where rating_id >= ? and rating_id <= ?;',
+                               params=[first_id, last_id])
+
     def random_sample_table(self, table: str, n: int):
         return self.query_data(query=f'select * from {table} order by random() limit {n};')
 
