@@ -12,3 +12,4 @@ jwt
 passlib[Bcrypt]
 python-jose
 python-multipart
+tensorflow-recommenders
