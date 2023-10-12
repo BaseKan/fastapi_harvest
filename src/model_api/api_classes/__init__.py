@@ -1,2 +1,2 @@
 from .user import UserResponseModel
-from .ratings import RatingResponseModel
+from .rating import RatingResponseModel
