@@ -24,18 +24,18 @@ def train_test_split_ds(ds, train_split=0.9, shuffle=True, shuffle_size=10000):
 
 def get_vocabulary_datasets():
     users = pd.DataFrame(data_loader.get_full_table('users').loc[:, 'user_id'])
-    movies = pd.DataFrame(data_loader.get_full_table('movies').loc[:, 'movie_title'])
+    movies = pd.DataFrame(data_loader.get_full_table('movies').loc[:, ['movie_id', 'movie_title']])
 
     return users, movies
 
 
-def process_training_data(movies, dataset_usage_percentage: float = 0.5):
-    ratings = data_loader.query_data(
-        query="""Select M.movie_title, R.user_id 
-                 from movies M join ratings R
-                 on M.movie_id=R.movie_id""").astype({'user_id': str})
-
-    ratings = ratings.iloc[:int(dataset_usage_percentage*ratings.shape[0])]
+def process_training_data(movies, dataset_first_rating_id: int = 0,
+                          dataset_last_rating_id: int = 50000):
+    ratings = (data_loader.get_ratings_id_range(first_id=dataset_first_rating_id,
+                                                last_id=dataset_last_rating_id)
+               .merge(movies, on='movie_id')
+               .loc[:, ['movie_title', 'user_id']]
+               .astype({'user_id': str}))
 
     ratings_ds = tf.data.Dataset.from_tensor_slices(dict(ratings))
     movies_ds = tf.data.Dataset.from_tensor_slices(dict(movies)).map(lambda x: x['movie_title'])

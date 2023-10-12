@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any, Annotated
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Path, HTTPException
 from fastapi.responses import JSONResponse
@@ -48,7 +48,7 @@ async def add_user_rating(user_ratings: list[RatingResponseModel], data: DataLoa
 
 @router.post("/update_password")
 async def update_password(user_id: int, password: str, data: DataLoader = Depends(get_data)) -> JSONResponse:
-    "Update a hashed password in the database by providing a user_id and password."
+    """Update a hashed password in the database by providing a user_id and password."""
     user = data.query_on_col_value(table='users', col_name='user_id', col_value=user_id)
     hashed_password = get_password_hash(password)
 
@@ -68,7 +68,7 @@ async def update_password(user_id: int, password: str, data: DataLoader = Depend
 @router.post("/token", response_model=Token)
 async def login_for_access_token(data: Annotated[DataLoader, Depends(get_data)],
                                  form_data: OAuth2PasswordRequestForm = Depends()) -> dict[str, str]:
-    "Creates and returns an access token (JWT) when user is authenticated."
+    """Creates and returns an access token (JWT) when user is authenticated."""
 
     user = authenticate_user(user_id=int(form_data.username),
                              password=form_data.password,
@@ -88,7 +88,7 @@ async def login_for_access_token(data: Annotated[DataLoader, Depends(get_data)],
 async def read_ratings_by_user(user_id: int = Depends(get_current_user),
                                data: DataLoader = Depends(get_data)
                                ) -> JSONResponse:
-    "Returns ratings by the current user."
+    """Returns ratings by the current user."""
     if user_id is None:
         raise HTTPException(status_code=404, detail="User not found")
 

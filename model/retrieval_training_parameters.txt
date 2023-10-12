@@ -1,0 +1,4 @@
+from_checkpoint: False
+epochs: 10
+dataset_first_rating_id: 0
+dataset_last_rating_id: 50000

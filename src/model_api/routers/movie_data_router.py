@@ -12,7 +12,8 @@ router = APIRouter(prefix="/movies",
                    tags=["movies"],
                    responses={404: {"description": "Not Found"}})
 
-UserEnum = Enum("UserEnum", {str(value): str(value) for value in list(data_loader.get_full_table(table='users').user_id)},
+UserEnum = Enum("UserEnum", {str(value): str(value)
+                             for value in list(data_loader.get_full_table(table='users').user_id)},
                 type=str)
 
 
@@ -50,3 +51,4 @@ async def recommend_movies_batch(n: int, users: list[UserEnum] = Query(),
                                  predictor: TensorflowPredictor = Depends(get_predictor)):
     predictions = predictor.predict({"user_id": [user.value for user in users]})
     return [{"user_id": users[i].value, "movies": predictions[i][0:n]} for i in range(len(users))]
+
