@@ -12,11 +12,14 @@ RETRIEVAL_CHECKPOINT_PATH = os.path.join(MODEL_DIR, 'retrieval_model', 'retrieva
 # See: https://www.tensorflow.org/recommenders/examples/basic_retrieval
 
 
-def retrain(from_checkpoint: bool = True, epochs: int = 3, dataset_usage_percentage: float = 0.5):
+def retrain(from_checkpoint: bool = True, epochs: int = 3,
+            dataset_first_rating_id: int = 0,
+            dataset_last_rating_id: int = 50000):
     users, movies = get_vocabulary_datasets()
     user_model, movie_model = create_embedding_models(users, movies)
 
-    ratings_train, ratings_test, movies_ds = process_training_data(movies, dataset_usage_percentage)
+    ratings_train, ratings_test, movies_ds = process_training_data(movies, dataset_first_rating_id,
+                                                                   dataset_last_rating_id)
 
     retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
     retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=0.1))
@@ -51,6 +54,11 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3, dataset_usage_percent
     print(titles)
 
     index.save("./model/index")
+    with open(os.path.join(MODEL_DIR, 'retrieval_training_parameters.txt'), 'w') as file:
+        file.writelines([f'from_checkpoint: {from_checkpoint}\n',
+                         f'epochs: {epochs}\n',
+                         f'dataset_first_rating_id: {dataset_first_rating_id}\n',
+                         f'dataset_last_rating_id: {dataset_last_rating_id}\n'])
 
 
 if __name__ == '__main__':
