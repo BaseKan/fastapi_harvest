@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 import tensorflow as tf
 import tensorflow_recommenders as tfrs
@@ -7,31 +8,39 @@ from model_api.models.embedding_models import get_vocabulary_datasets, process_t
 from model_api.models.retrieval_model import RetrievalModel
 
 MODEL_DIR = './model/'
-RETRIEVAL_CHECKPOINT_PATH = os.path.join(MODEL_DIR, 'retrieval_model', 'retrieval_model')
+RETRIEVAL_CHECKPOINT_PATH = os.path.join('retrieval_model', 'retrieval_model')
 
 # See: https://www.tensorflow.org/recommenders/examples/basic_retrieval
 
 
 def retrain(from_checkpoint: bool = True, epochs: int = 3,
             dataset_first_rating_id: int = 0,
-            dataset_last_rating_id: int = 50000):
+            dataset_last_rating_id: int = 50000,
+            embedding_dimension: int = 32,
+            learning_rate: float = 0.1,
+            model_version: int = 0,
+            previous_checkpoint_model_version: int = 0):
+
+    model_version_base_path = os.path.join(MODEL_DIR, str(model_version))
+
     users, movies = get_vocabulary_datasets()
-    user_model, movie_model = create_embedding_models(users, movies)
+    user_model, movie_model = create_embedding_models(users, movies, embedding_dimension=embedding_dimension)
 
     ratings_train, ratings_test, movies_ds = process_training_data(movies, dataset_first_rating_id,
                                                                    dataset_last_rating_id)
 
     retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
-    retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=0.1))
+    retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=learning_rate))
 
     cached_train = ratings_train.shuffle(100_000).batch(8192).cache()
     cached_test = ratings_test.batch(4096).cache()
 
     if from_checkpoint:
-        retrieval_model.load_weights(filepath=RETRIEVAL_CHECKPOINT_PATH)
+        retrieval_model.load_weights(filepath=os.path.join(MODEL_DIR, str(previous_checkpoint_model_version),
+                                                           RETRIEVAL_CHECKPOINT_PATH))
 
     retrieval_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=RETRIEVAL_CHECKPOINT_PATH,
+        filepath=os.path.join(model_version_base_path, RETRIEVAL_CHECKPOINT_PATH),
         save_weights_only=True,
         monitor='loss',
         mode='min',
@@ -39,7 +48,8 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
 
     retrieval_model.fit(cached_train, epochs=epochs, callbacks=retrieval_checkpoint_callback)
 
-    print(retrieval_model.evaluate(cached_test, return_dict=True))
+    evaluation_result = retrieval_model.evaluate(cached_test, return_dict=True)
+    print(evaluation_result)
 
     index = tfrs.layers.factorized_top_k.BruteForce(retrieval_model.user_model)
     # recommends movies out of the entire movies dataset.
@@ -53,13 +63,25 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
     _, titles = index({k: np.array(v) for k, v in input_features.items()})
     print(titles)
 
-    index.save("./model/index")
+    index.save(os.path.join(model_version_base_path, 'index'))
 
-    with open(os.path.join(MODEL_DIR, 'retrieval_training_parameters.txt'), 'w') as file:
-        file.writelines([f'from_checkpoint: {from_checkpoint}\n',
-                         f'epochs: {epochs}\n',
-                         f'dataset_first_rating_id: {dataset_first_rating_id}\n',
-                         f'dataset_last_rating_id: {dataset_last_rating_id}\n'])
+    training_parameters_dict = {
+        'from_checkpoint': from_checkpoint,
+        'epochs': epochs,
+        'dataset_first_rating_id': dataset_first_rating_id,
+        'dataset_last_rating_id': dataset_last_rating_id,
+        'embedding_dimension': embedding_dimension,
+        'learning_rate': learning_rate,
+        'previous_checkpoint_model_version': previous_checkpoint_model_version
+    }
+
+    with open(os.path.join(model_version_base_path, 'training_parameters.json'), 'w') as file:
+        json.dump(training_parameters_dict, file, indent=4)
+
+    with open(os.path.join(model_version_base_path, 'evaluation_result.json'), 'w') as file:
+        json.dump(evaluation_result, file, indent=4)
+
+    return training_parameters_dict, evaluation_result
 
 
 if __name__ == '__main__':

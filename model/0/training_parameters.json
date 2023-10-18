@@ -1,0 +1,9 @@
+{
+    "from_checkpoint": false,
+    "epochs": 10,
+    "dataset_first_rating_id": 0,
+    "dataset_last_rating_id": 50000,
+    "embedding_dimension": 32,
+    "learning_rate": 0.1,
+    "previous_checkpoint_model_version": 0
+}
