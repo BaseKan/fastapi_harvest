@@ -1,4 +1,5 @@
 import os
+import json
 import numpy as np
 import tensorflow as tf
 import tensorflow_recommenders as tfrs
@@ -47,7 +48,8 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
 
     retrieval_model.fit(cached_train, epochs=epochs, callbacks=retrieval_checkpoint_callback)
 
-    print(retrieval_model.evaluate(cached_test, return_dict=True))
+    evaluation_result = retrieval_model.evaluate(cached_test, return_dict=True)
+    print(evaluation_result)
 
     index = tfrs.layers.factorized_top_k.BruteForce(retrieval_model.user_model)
     # recommends movies out of the entire movies dataset.
@@ -63,14 +65,23 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
 
     index.save(os.path.join(model_version_base_path, 'index'))
 
-    with open(os.path.join(model_version_base_path, 'retrieval_training_parameters.txt'), 'w') as file:
-        file.writelines([f'from_checkpoint: {from_checkpoint}\n',
-                         f'epochs: {epochs}\n',
-                         f'dataset_first_rating_id: {dataset_first_rating_id}\n',
-                         f'dataset_last_rating_id: {dataset_last_rating_id}\n',
-                         f'embedding_dimension: {embedding_dimension}\n',
-                         f'learning_rate: {learning_rate}\n',
-                         f'previous_checkpoint_model_version: {previous_checkpoint_model_version}\n'])
+    training_parameters_dict = {
+        'from_checkpoint': from_checkpoint,
+        'epochs': epochs,
+        'dataset_first_rating_id': dataset_first_rating_id,
+        'dataset_last_rating_id': dataset_last_rating_id,
+        'embedding_dimension': embedding_dimension,
+        'learning_rate': learning_rate,
+        'previous_checkpoint_model_version': previous_checkpoint_model_version
+    }
+
+    with open(os.path.join(model_version_base_path, 'training_parameters.json'), 'w') as file:
+        json.dump(training_parameters_dict, file, indent=4)
+
+    with open(os.path.join(model_version_base_path, 'evaluation_result.json'), 'w') as file:
+        json.dump(evaluation_result, file, indent=4)
+
+    return training_parameters_dict, evaluation_result
 
 
 if __name__ == '__main__':
