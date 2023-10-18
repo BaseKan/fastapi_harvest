@@ -7,31 +7,39 @@ from model_api.models.embedding_models import get_vocabulary_datasets, process_t
 from model_api.models.retrieval_model import RetrievalModel
 
 MODEL_DIR = './model/'
-RETRIEVAL_CHECKPOINT_PATH = os.path.join(MODEL_DIR, 'retrieval_model', 'retrieval_model')
+RETRIEVAL_CHECKPOINT_PATH = os.path.join('retrieval_model', 'retrieval_model')
 
 # See: https://www.tensorflow.org/recommenders/examples/basic_retrieval
 
 
 def retrain(from_checkpoint: bool = True, epochs: int = 3,
             dataset_first_rating_id: int = 0,
-            dataset_last_rating_id: int = 50000):
+            dataset_last_rating_id: int = 50000,
+            embedding_dimension: int = 32,
+            learning_rate: float = 0.1,
+            model_version: int = 0,
+            previous_checkpoint_model_version: int = 0):
+
+    model_version_base_path = os.path.join(MODEL_DIR, str(model_version))
+
     users, movies = get_vocabulary_datasets()
-    user_model, movie_model = create_embedding_models(users, movies)
+    user_model, movie_model = create_embedding_models(users, movies, embedding_dimension=embedding_dimension)
 
     ratings_train, ratings_test, movies_ds = process_training_data(movies, dataset_first_rating_id,
                                                                    dataset_last_rating_id)
 
     retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
-    retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=0.1))
+    retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=learning_rate))
 
     cached_train = ratings_train.shuffle(100_000).batch(8192).cache()
     cached_test = ratings_test.batch(4096).cache()
 
     if from_checkpoint:
-        retrieval_model.load_weights(filepath=RETRIEVAL_CHECKPOINT_PATH)
+        retrieval_model.load_weights(filepath=os.path.join(MODEL_DIR, str(previous_checkpoint_model_version),
+                                                           RETRIEVAL_CHECKPOINT_PATH))
 
     retrieval_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-        filepath=RETRIEVAL_CHECKPOINT_PATH,
+        filepath=os.path.join(model_version_base_path, RETRIEVAL_CHECKPOINT_PATH),
         save_weights_only=True,
         monitor='loss',
         mode='min',
@@ -53,13 +61,16 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
     _, titles = index({k: np.array(v) for k, v in input_features.items()})
     print(titles)
 
-    index.save("./model/index")
+    index.save(os.path.join(model_version_base_path, 'index'))
 
-    with open(os.path.join(MODEL_DIR, 'retrieval_training_parameters.txt'), 'w') as file:
+    with open(os.path.join(model_version_base_path, 'retrieval_training_parameters.txt'), 'w') as file:
         file.writelines([f'from_checkpoint: {from_checkpoint}\n',
                          f'epochs: {epochs}\n',
                          f'dataset_first_rating_id: {dataset_first_rating_id}\n',
-                         f'dataset_last_rating_id: {dataset_last_rating_id}\n'])
+                         f'dataset_last_rating_id: {dataset_last_rating_id}\n',
+                         f'embedding_dimension: {embedding_dimension}\n',
+                         f'learning_rate: {learning_rate}\n',
+                         f'previous_checkpoint_model_version: {previous_checkpoint_model_version}\n'])
 
 
 if __name__ == '__main__':
