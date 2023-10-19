@@ -49,7 +49,7 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
     evaluation_result = retrieval_model.evaluate(cached_test, return_dict=True)
     print(evaluation_result)
 
-    index = tfrs.layers.factorized_top_k.BruteForce(retrieval_model.user_model)
+    index = tfrs.layers.factorized_top_k.BruteForce(retrieval_model.user_model, k=100)
     # recommends movies out of the entire movies dataset.
     index.index_from_dataset(
         tf.data.Dataset.zip((movies_ds.batch(100), movies_ds.batch(100).map(retrieval_model.movie_model)))
