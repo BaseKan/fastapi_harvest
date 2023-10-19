@@ -6,9 +6,7 @@ import tensorflow_recommenders as tfrs
 
 from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
-
-MODEL_DIR = './model/'
-RETRIEVAL_CHECKPOINT_PATH = os.path.join('retrieval_model', 'retrieval_model')
+from model_api.constants import MODEL_DIR, RETRIEVAL_CHECKPOINT_PATH
 
 # See: https://www.tensorflow.org/recommenders/examples/basic_retrieval
 
