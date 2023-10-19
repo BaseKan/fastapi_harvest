@@ -10,11 +10,9 @@ from model_api.models.retrieval_model import RetrievalModel
 from model_api.retrain_models import MODEL_DIR, RETRIEVAL_CHECKPOINT_PATH
 from model_api.dataloaders import DataLoader
 from model_api.predictors import TensorflowPredictor
+from model_api.constants import MODEL_VERSION, MODEL_DIR
 
-# TODO: MUST BE DYNAMIC
-MODEL_VERSION = 0
-
-predictor = TensorflowPredictor(model_path=os.path.join('./model', str(MODEL_VERSION), 'index'))
+predictor = TensorflowPredictor(model_path=os.path.join(MODEL_DIR, str(MODEL_VERSION), 'index'))
 data_loader = DataLoader()
 
 
