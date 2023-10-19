@@ -7,10 +7,9 @@ from fastapi import Depends
 
 from model_api.models.embedding_models import get_vocabulary_datasets, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
-from model_api.retrain_models import MODEL_DIR, RETRIEVAL_CHECKPOINT_PATH
 from model_api.dataloaders import DataLoader
 from model_api.predictors import TensorflowPredictor
-from model_api.constants import MODEL_VERSION, MODEL_DIR
+from model_api.constants import MODEL_VERSION, MODEL_DIR, RETRIEVAL_CHECKPOINT_PATH
 
 predictor = TensorflowPredictor(model_path=os.path.join(MODEL_DIR, str(MODEL_VERSION), 'index'))
 data_loader = DataLoader()
