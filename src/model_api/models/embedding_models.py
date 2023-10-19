@@ -3,8 +3,6 @@ import pandas as pd
 
 from model_api.dataloaders import DataLoader
 
-data_loader = DataLoader()
-
 
 def train_test_split_ds(ds, train_split=0.9, shuffle=True, shuffle_size=10000):
     ds_size = len(ds)
@@ -21,14 +19,15 @@ def train_test_split_ds(ds, train_split=0.9, shuffle=True, shuffle_size=10000):
     return train_ds, test_ds
 
 
-def get_vocabulary_datasets():
-    users = pd.DataFrame(data_loader.get_full_table('users').loc[:, 'user_id'])
-    movies = pd.DataFrame(data_loader.get_full_table('movies').loc[:, ['movie_id', 'movie_title']])
+def get_vocabulary_datasets(data_loader: DataLoader) -> (pd.DataFrame, pd.DataFrame):
+    users = data_loader.get_full_table('users').loc[:, 'user_id']
+    movies = data_loader.get_full_table('movies').loc[:, ['movie_id', 'movie_title']]
 
     return users, movies
 
 
-def process_training_data(movies, dataset_first_rating_id: int = 0,
+def process_training_data(data_loader: DataLoader, movies,
+                          dataset_first_rating_id: int = 0,
                           dataset_last_rating_id: int = 50000):
     ratings = (data_loader.get_ratings_id_range(first_id=dataset_first_rating_id,
                                                 last_id=dataset_last_rating_id)
