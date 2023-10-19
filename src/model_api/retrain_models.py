@@ -6,6 +6,7 @@ import tensorflow_recommenders as tfrs
 
 from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
+from model_api.dependencies import data_loader
 
 MODEL_DIR = './model/'
 RETRIEVAL_CHECKPOINT_PATH = os.path.join('retrieval_model', 'retrieval_model')
@@ -23,11 +24,13 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
 
     model_version_base_path = os.path.join(MODEL_DIR, str(model_version))
 
-    users, movies = get_vocabulary_datasets()
-    user_model, movie_model = create_embedding_models(users, movies, embedding_dimension=embedding_dimension)
+    users, movies = get_vocabulary_datasets(data_loader=data_loader)
+    user_model, movie_model = create_embedding_models(users=users, movies=movies,
+                                                      embedding_dimension=embedding_dimension)
 
-    ratings_train, ratings_test, movies_ds = process_training_data(movies, dataset_first_rating_id,
-                                                                   dataset_last_rating_id)
+    ratings_train, ratings_test, movies_ds = process_training_data(data_loader=data_loader, movies=movies,
+                                                                   dataset_first_rating_id=dataset_first_rating_id,
+                                                                   dataset_last_rating_id=dataset_last_rating_id)
 
     retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
     retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=learning_rate))
