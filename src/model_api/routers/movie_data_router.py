@@ -43,6 +43,7 @@ async def query_movies(min_rating: float = 0.0, max_rating: float = 5.0, data: D
 
 @router.get("/recommend/{user}/{n}", responses={422: {"description": "The user id was invalid."}})
 async def recommend_movies(user: UserEnum, n: int, predictor: TensorflowPredictor = Depends(get_predictor)):
+    print(predictor.predict({"user_id": [user.value]}))
     return {"message": predictor.predict({"user_id": [user.value]})[0][0:n]}
 
 

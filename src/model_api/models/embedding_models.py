@@ -20,7 +20,7 @@ def train_test_split_ds(ds, train_split=0.9, shuffle=True, shuffle_size=10000):
 
 
 def get_vocabulary_datasets(data_loader: DataLoader) -> (pd.DataFrame, pd.DataFrame):
-    users = data_loader.get_full_table('users').loc[:, 'user_id']
+    users = pd.DataFrame(data_loader.get_full_table('users').loc[:, 'user_id'])
     movies = data_loader.get_full_table('movies').loc[:, ['movie_id', 'movie_title']]
 
     return users, movies

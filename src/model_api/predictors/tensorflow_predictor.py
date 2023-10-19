@@ -14,6 +14,7 @@ class TensorflowPredictor(TensorflowPredictorBase):
         return tf.keras.models.load_model(path)
 
     def predict(self, input_features: dict[str, list]) -> list[list[str]]:
+        print(self._model({k: np.array(v) for k, v in input_features.items()}))
         predictions = self._model({k: np.array(v) for k, v in input_features.items()})[1].numpy()
         return [[tf.compat.as_str_any(result) for result in prediction] for prediction in predictions]
 
