@@ -1,0 +1,6 @@
+artifact_location: file:///home/niels/Projects/fastapi_harvest/mlruns/336855888041397870
+creation_time: 1697809669587
+experiment_id: '336855888041397870'
+last_update_time: 1697809669587
+lifecycle_stage: active
+name: Recommender hyperparameter tuning

@@ -1,0 +1,15 @@
+artifact_uri: file:///home/niels/Projects/fastapi_harvest/mlruns/336855888041397870/0a1cd13a65b644dda93ec63a1071bca3/artifacts
+end_time: 1697809920124
+entry_point_name: ''
+experiment_id: '336855888041397870'
+lifecycle_stage: active
+run_id: 0a1cd13a65b644dda93ec63a1071bca3
+run_name: harvest run 1
+run_uuid: 0a1cd13a65b644dda93ec63a1071bca3
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1697809886862
+status: 3
+tags: []
+user_id: niels

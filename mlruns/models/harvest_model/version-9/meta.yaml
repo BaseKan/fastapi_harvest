@@ -1,0 +1,13 @@
+aliases: []
+creation_timestamp: 1697810080690
+current_stage: None
+description: null
+last_updated_timestamp: 1697810080690
+name: harvest_model
+run_id: 17241895d57f40818548086b85afaaad
+run_link: null
+source: file:///home/niels/Projects/fastapi_harvest/mlruns/336855888041397870/17241895d57f40818548086b85afaaad/artifacts/model
+status: READY
+status_message: null
+user_id: null
+version: 9

@@ -12,6 +12,11 @@ from model_api.predictors import TensorflowPredictor
 from model_api.constants import MODEL_VERSION, MODEL_DIR, RETRIEVAL_CHECKPOINT_PATH
 
 predictor = TensorflowPredictor(model_path=os.path.join(MODEL_DIR, str(MODEL_VERSION), 'index'))
+# Predictor heeft model dir nodig wat nu artifacts is. "index" verwijst naar folder wat nu 
+# MODEL_DIR -> beste_model_id/artifacts
+# predictor model_path -> MODEL_DIR/model/data/model
+# model/data/model is die verwijst naar save_model.pb
+
 data_loader = DataLoader()
 
 

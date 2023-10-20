@@ -1,4 +1,5 @@
 import itertools
+import os
 
 import mlflow
 from mlflow.tracking import MlflowClient
@@ -8,6 +9,8 @@ import numpy as np
 
 from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
+from model_api.constants import RETRIEVAL_CHECKPOINT_PATH
+from model_api.dependencies import data_loader
 
 
 client = MlflowClient()
@@ -29,7 +32,10 @@ hyperparameters = [{"embedding_dim": emb_dim, "learning_rate": lr} for emb_dim, 
 
 def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
     for hyperparams in hyperparameters:
-        with mlflow.start_run(run_name="harvest run 1"):
+        with mlflow.start_run(run_name="harvest run 1") as run:
+
+            run_id = run.info.run_id
+            experiment_id = run.info.experiment_id
 
             # Log parameters
             mlflow.log_params({
@@ -38,10 +44,12 @@ def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
                 "epochs": epochs,
             })
 
-            users, movies = get_vocabulary_datasets()
+            users, movies = get_vocabulary_datasets(data_loader=data_loader)
             user_model, movie_model = create_embedding_models(users, movies, embedding_dimension=hyperparams["embedding_dim"])
 
-            ratings_train, ratings_test, movies_ds = process_training_data(movies, dataset_first_rating_id, dataset_last_rating_id)
+            ratings_train, ratings_test, movies_ds = process_training_data(data_loader=data_loader, movies=movies,
+                                                                           dataset_first_rating_id=dataset_first_rating_id,
+                                                                           dataset_last_rating_id=dataset_last_rating_id)
 
             # Create and compile model
             retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
@@ -51,8 +59,16 @@ def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
             cached_test = ratings_test.batch(4096).cache()
 
             # in map data van artifacts een folder aanmaken genaamd'retrieval_model'
+            model_version_base_path = f"mlruns/{experiment_id}/{run_id}/artifacts"
 
-            retrieval_model.fit(cached_train, epochs=epochs)
+            retrieval_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
+                filepath=os.path.join(model_version_base_path, RETRIEVAL_CHECKPOINT_PATH),
+                save_weights_only=True,
+                monitor='loss',
+                mode='min',
+                save_best_only=True)
+
+            retrieval_model.fit(cached_train, epochs=epochs, callbacks=retrieval_checkpoint_callback)
 
             evaluation_result = retrieval_model.evaluate(cached_test, return_dict=True)
 
