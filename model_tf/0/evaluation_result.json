@@ -1,0 +1,10 @@
+{
+    "factorized_top_k/top_1_categorical_accuracy": 0.023595280945301056,
+    "factorized_top_k/top_5_categorical_accuracy": 0.10937812179327011,
+    "factorized_top_k/top_10_categorical_accuracy": 0.1753649264574051,
+    "factorized_top_k/top_50_categorical_accuracy": 0.39872026443481445,
+    "factorized_top_k/top_100_categorical_accuracy": 0.525894820690155,
+    "loss": 5122.4453125,
+    "regularization_loss": 0,
+    "total_loss": 5122.4453125
+}

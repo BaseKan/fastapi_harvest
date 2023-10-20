@@ -6,9 +6,8 @@ import tensorflow_recommenders as tfrs
 
 from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
-
-MODEL_DIR = './model/'
-RETRIEVAL_CHECKPOINT_PATH = os.path.join('retrieval_model', 'retrieval_model')
+from model_api.dependencies import data_loader
+from model_api.constants import MODEL_DIR, RETRIEVAL_CHECKPOINT_PATH
 
 # See: https://www.tensorflow.org/recommenders/examples/basic_retrieval
 
@@ -23,11 +22,13 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
 
     model_version_base_path = os.path.join(MODEL_DIR, str(model_version))
 
-    users, movies = get_vocabulary_datasets()
-    user_model, movie_model = create_embedding_models(users, movies, embedding_dimension=embedding_dimension)
+    users, movies = get_vocabulary_datasets(data_loader=data_loader)
+    user_model, movie_model = create_embedding_models(users=users, movies=movies,
+                                                      embedding_dimension=embedding_dimension)
 
-    ratings_train, ratings_test, movies_ds = process_training_data(movies, dataset_first_rating_id,
-                                                                   dataset_last_rating_id)
+    ratings_train, ratings_test, movies_ds = process_training_data(data_loader=data_loader, movies=movies,
+                                                                   dataset_first_rating_id=dataset_first_rating_id,
+                                                                   dataset_last_rating_id=dataset_last_rating_id)
 
     retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
     retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=learning_rate))
@@ -51,7 +52,7 @@ def retrain(from_checkpoint: bool = True, epochs: int = 3,
     evaluation_result = retrieval_model.evaluate(cached_test, return_dict=True)
     print(evaluation_result)
 
-    index = tfrs.layers.factorized_top_k.BruteForce(retrieval_model.user_model)
+    index = tfrs.layers.factorized_top_k.BruteForce(retrieval_model.user_model, k=100)
     # recommends movies out of the entire movies dataset.
     index.index_from_dataset(
         tf.data.Dataset.zip((movies_ds.batch(100), movies_ds.batch(100).map(retrieval_model.movie_model)))
