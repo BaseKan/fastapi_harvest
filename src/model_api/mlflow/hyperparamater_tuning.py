@@ -90,7 +90,8 @@ def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
             index.index_from_dataset(
                 tf.data.Dataset.zip((movies_ds.batch(100), movies_ds.batch(100).map(retrieval_model.movie_model)))
             )
-                # call once otherwise it cannot be saved
+
+            # call once otherwise it cannot be saved
             input_features = {'user_id': tf.convert_to_tensor(
                 [[x for x in ratings_test.take(1)][0]['user_id'].numpy()])}
 
@@ -98,8 +99,7 @@ def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
             print(titles)
 
             # Log model
-            mlflow.tensorflow.log_model(index, "model", registered_model_name="harvest_model")
-            # mlflow.tensorflow.save_model(retrieval_model, "NIELS")
+            mlflow.tensorflow.log_model(model=index, artifact_path="model")
 
 
 if __name__ == '__main__':
