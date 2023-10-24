@@ -12,7 +12,6 @@ from model_api.constants import RETRIEVAL_CHECKPOINT_PATH
 from model_api.predictors.tensorflow_predictor import TensorflowPredictor
 
 
-
 def register_best_model(model_name: str, experiment_name: str, metric: str, stage: str = "Production"):
     client = MlflowClient()
 
@@ -21,7 +20,7 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
     experiment_id=current_experiment['experiment_id']
 
     df = mlflow.search_runs([experiment_id], order_by=[f"metrics.{metric} DESC"])
-    print(df[[f"metrics.{metric}","run_id"]])
+    print(df[[f"metrics.{metric}", "run_id"]])
 
     best_run_id = df.at[0, "run_id"]
 
@@ -85,7 +84,7 @@ def load_registered_retrieval_model(model_name: str, stage: str = "Production") 
     return retrieval_model
 
 
-def load_registered_predictor_model(model_name: str, stage: str = "Production") -> tf.keras.Model:
+def load_registered_predictor_model(model_name: str, stage: str = "Production") -> TensorflowPredictor:
     # List all registered models
     filtered_string = f"name='{model_name}'"
 
@@ -100,6 +99,8 @@ def load_registered_predictor_model(model_name: str, stage: str = "Production") 
     predictor = TensorflowPredictor(model_path=source_path)
 
     print(predictor.predict({"user_id": ["151"]}))
+
+    return predictor
 
 
 
