@@ -67,7 +67,7 @@ def load_registered_retrieval_model(model_name: str, stage: str = "Production") 
     
     # extract params/metrics data for run_id in a single dict 
     run_data_dict = client.get_run(run_id).data.to_dictionary()
-    # Get learning rate
+    # Get learning rate and embedding dimension
     learning_rate = run_data_dict["params"]["learning_rate"]
     embedding_dimension = run_data_dict["params"]["embedding_dim"]
 

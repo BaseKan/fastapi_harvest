@@ -28,7 +28,7 @@ docker run -d --name harvest_api_container -p 80:80 -v /path/to/repo/logs:/code/
 # Run MLFlow UI
 In order to run the MLFlow UI, one needs to specify the gunicorn config file.'
 ```commandline
- mlflow ui --gunicorn-opts "-c gunicorn_mlflow.conf.py"  
+mlflow ui --gunicorn-opts "-c gunicorn_mlflow.conf.py"  
 ```
   
 # Serve model 

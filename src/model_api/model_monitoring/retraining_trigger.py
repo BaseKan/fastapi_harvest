@@ -1,60 +1,63 @@
-import itertools
-import os
-
+from mlflow import MlflowClient
 import mlflow
-from mlflow.tracking import MlflowClient
+import os
 import tensorflow as tf
 import tensorflow_recommenders as tfrs
 import numpy as np
 
+from model_api.mlflow.model_serving import load_registered_retrieval_model
 from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
-from model_api.models.retrieval_model import RetrievalModel
-from model_api.constants import RETRIEVAL_CHECKPOINT_PATH
 from model_api.dependencies import data_loader
+from model_api.constants import RETRIEVAL_CHECKPOINT_PATH
 
 
-client = MlflowClient()
+def check_for_retraining(experiment_name_monitoring: str, 
+                         current_model_name: str, 
+                         threshold: float, 
+                         dataset_first_rating_id: int,
+                         dataset_last_rating_id: int,
+                         new_experiment_name: str, 
+                         epochs: int):
 
-#mlflow.set_tracking_uri("http://localhost:5000")
-#mlflow.set_registry_uri("http://localhost:5000")
+    current_experiment=dict(mlflow.get_experiment_by_name(experiment_name_monitoring))
+    experiment_id=current_experiment['experiment_id']
 
-# Create experiment
-mlflow.set_experiment("Recommender hyperparameter tuning")
+    current_performance_run = mlflow.search_runs(
+    experiment_ids=experiment_id,
+    order_by=["metrics.top_k_100 ASC"]
+    ).loc[0]
 
-# Hyperparameter search space
-embedding_dimension = [16, 32, 64, 128]
-learning_rate = [0.001, 0.01, 0.1]
+    if current_performance_run["metrics.top_k_100"] <= threshold:
+        # last_rating_id = run["run_id"]
 
-# Create Cartesian product of hyperparams
-hyperparameter_combinations = list(itertools.product(embedding_dimension, learning_rate))
-hyperparameters = [{"embedding_dim": emb_dim, "learning_rate": lr} for emb_dim, lr in hyperparameter_combinations]
+        # List all registered models
+        filtered_string = f"name='{current_model_name}'"
 
+        # Search for latest registered model and order by creation timestamp
+        registered_models = mlflow.search_registered_models(filter_string=filtered_string, 
+                                                            order_by=["creation_timestamp"])
 
-def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
-    for hyperparams in hyperparameters:
-        with mlflow.start_run(run_name="harvest run 1") as run:
+        # Filter for models with a current stage of "Production"
+        production_models = [model for model in registered_models if model.latest_versions[0].current_stage == "Production"]
+        run_id_current_model = production_models[0].latest_versions[0].run_id
+
+        # Load current model including weights
+        retrieval_model = load_registered_retrieval_model(model_name=current_model_name)
+
+        mlflow.set_experiment(new_experiment_name)
+
+        with mlflow.start_run() as run:
 
             run_id = run.info.run_id
             experiment_id = run.info.experiment_id
 
-            # Log parameters
-            mlflow.log_params({
-                "embedding_dim": hyperparams["embedding_dim"],
-                "learning_rate": hyperparams["learning_rate"],
-                "epochs": epochs,
-            })
-
             users, movies = get_vocabulary_datasets(data_loader=data_loader)
-            user_model, movie_model = create_embedding_models(users, movies, embedding_dimension=hyperparams["embedding_dim"])
+            # user_model, movie_model = create_embedding_models(users, movies, embedding_dimension=embedding_dimension)
 
             ratings_train, ratings_test, movies_ds = process_training_data(data_loader=data_loader, movies=movies,
                                                                            dataset_first_rating_id=dataset_first_rating_id,
                                                                            dataset_last_rating_id=dataset_last_rating_id)
-
-            # Create and compile model
-            retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
-            retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=hyperparams["learning_rate"]))
-
+            
             cached_train = ratings_train.shuffle(100_000).batch(8192).cache()
             cached_test = ratings_test.batch(4096).cache()
 
@@ -67,10 +70,11 @@ def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
                 monitor='loss',
                 mode='min',
                 save_best_only=True)
-
+            
             retrieval_model.fit(cached_train, epochs=epochs, callbacks=retrieval_checkpoint_callback)
 
             evaluation_result = retrieval_model.evaluate(cached_test, return_dict=True)
+            print(evaluation_result)
 
             # Remove prefix from evaluation results 
             evaluation_results_new = {}
@@ -101,8 +105,16 @@ def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
             # Log model
             mlflow.tensorflow.log_model(model=index, artifact_path="model")
 
+            # Register snd replace model if performance is better than current model on the same test set
+            print(f"Current model performance: {current_performance_run['metrics.top_k_100']}")
 
-if __name__ == '__main__':
-    tune_hyperparams(dataset_first_rating_id=0, 
-                     dataset_last_rating_id=50000, 
-                     epochs=5)
+
+if __name__ == "__main__":
+    check_for_retraining(experiment_name_monitoring="model monitoring", 
+                         current_model_name="harvest_recommender", 
+                         threshold=0.35, 
+                         dataset_first_rating_id=0,
+                         dataset_last_rating_id=80000,
+                         new_experiment_name="retraining experiment",
+                         epochs=4)
+    
