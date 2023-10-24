@@ -44,6 +44,29 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
     )
 
 
+def register_model(model_name: str, run_id: str, stage: str = "Production"):
+    client = MlflowClient()
+
+    mlflow.register_model(
+        model_uri=f"runs:/{run_id}/model",
+        name=model_name
+        )
+
+    # Get latest version
+    latest_versions = client.get_latest_versions(name=model_name)
+
+    for version in latest_versions:
+        print(f"version: {version.version}, stage: {version.current_stage}")
+
+    # Move new model into production stage and move old model to archived stage
+    client.transition_model_version_stage(
+        name=model_name,
+        stage=stage,
+        version=version.version,
+        archive_existing_versions=True
+    )
+
+
 def load_registered_retrieval_model(model_name: str, stage: str = "Production") -> tf.keras.Model:
     client = MlflowClient()
 
