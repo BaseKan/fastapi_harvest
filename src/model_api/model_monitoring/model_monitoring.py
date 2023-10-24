@@ -47,6 +47,21 @@ def monitor_model(model_name: str):
 
     # ---------------------------------------------------------------------------------------------------
 
+    # Get performance on reference dataset
+    # ---------------------------------------------------------------------------------------------------
+    ratings_df_current = (data.get_ratings_id_range(first_id=0,
+                                                last_id=60000)
+                    .merge(movies, on='movie_id')
+                    .loc[:, ['movie_title', 'user_id']]
+                    .astype({'user_id': str}))
+    
+    ratings_ds_current = tf.data.Dataset.from_tensor_slices(dict(ratings_df_current)).batch(4096).cache()
+    model_performance_current = recommender_model.evaluate(ratings_ds_current, return_dict=True)
+
+    print(f"Model performance on current dataset: {str(model_performance_current)}")
+
+    # ---------------------------------------------------------------------------------------------------
+
 
 if __name__ == "__main__":
     monitor_model(model_name="harvest_recommender")
@@ -65,3 +80,6 @@ if __name__ == "__main__":
 
 
 #         print(run.info)
+
+# 1. Name the workspace and project
+# 2. Define monitoring metrics and log them

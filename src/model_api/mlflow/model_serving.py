@@ -9,6 +9,7 @@ from model_api.dataloaders import DataLoader
 from model_api.models.embedding_models import get_vocabulary_datasets, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
 from model_api.constants import RETRIEVAL_CHECKPOINT_PATH
+from model_api.predictors.tensorflow_predictor import TensorflowPredictor
 
 
 
@@ -44,7 +45,7 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
     )
 
 
-def load_registered_model(model_name: str, stage: str = "Production") -> tf.keras.Model:
+def load_registered_retrieval_model(model_name: str, stage: str = "Production") -> tf.keras.Model:
     client = MlflowClient()
 
     # List all registered models
@@ -84,58 +85,27 @@ def load_registered_model(model_name: str, stage: str = "Production") -> tf.kera
     return retrieval_model
 
 
+def load_registered_predictor_model(model_name: str, stage: str = "Production") -> tf.keras.Model:
+    # List all registered models
+    filtered_string = f"name='{model_name}'"
+
+    # Search for latest registered model and order by creation timestamp
+    registered_models = mlflow.search_registered_models(filter_string=filtered_string, 
+                                                        order_by=["creation_timestamp"])
+
+    # Filter for models with a current stage of "Production"
+    production_models = [model for model in registered_models if model.latest_versions[0].current_stage == stage]
+    source_path = f"./mlruns{production_models[0].latest_versions[0].source.split('mlruns', 1)[1]}/data/model"
+
+    predictor = TensorflowPredictor(model_path=source_path)
+
+    print(predictor.predict({"user_id": ["151"]}))
 
 
 
 
 
-    # # Load model as a Keras model
-    # loaded_model = mlflow.keras.load_model(logged_model)
 
-    # extract params/metrics data for run_id in a single dict 
-    run_data_dict = client.get_run(run_id).data.to_dictionary()
-    # Get learning rate
-    learning_rate = run_data_dict["params"]["learning_rate"]
-
-    # Compile model with trained hyperparams
-    loaded_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=float(learning_rate)))
-
-    return loaded_model
-
-
-# def load_registered_model(model_name: str, stage: str = "Production") -> tf.keras.Model:
-#     client = MlflowClient()
-#     # List all registered models
-
-#     # # Get the experiment ID using the experiment name
-#     # experiment = mlflow.get_experiment_by_name(experiment_name)
-
-#     filtered_string = f"name='{model_name}'"
-
-#     # Search for latest registered model and order by creation timestamp
-#     registered_models = mlflow.search_registered_models(filter_string=filtered_string, 
-#                                                         order_by=["creation_timestamp"])
-
-#     # Filter for models with a current stage of "Production"
-#     production_models = [model for model in registered_models if model.latest_versions[0].current_stage == stage]
-#     run_id = production_models[0].latest_versions[0].run_id
-#     print(f"Run id={run_id}")
-
-#     # Get logged model path
-#     logged_model = f"runs:/{run_id}/model"
-
-#     # Load model as a Keras model
-#     loaded_model = mlflow.keras.load_model(logged_model)
-
-#     # extract params/metrics data for run_id in a single dict 
-#     run_data_dict = client.get_run(run_id).data.to_dictionary()
-#     # Get learning rate
-#     learning_rate = run_data_dict["params"]["learning_rate"]
-
-#     # Compile model with trained hyperparams
-#     loaded_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=float(learning_rate)))
-
-#     return loaded_model
 
 
 
@@ -145,7 +115,7 @@ if __name__ == "__main__":
     #                     metric="top_100_categorical_accuracy"
     #                     )
 
-    load_registered_model(model_name="harvest_recommender", 
+    load_registered_predictor_model(model_name="harvest_recommender", 
             #    experiment_name="Recommender hyperparameter tuning", 
                stage="Production"
                )
