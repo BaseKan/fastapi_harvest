@@ -15,9 +15,6 @@ from model_api.dependencies import data_loader
 
 client = MlflowClient()
 
-#mlflow.set_tracking_uri("http://localhost:5000")
-#mlflow.set_registry_uri("http://localhost:5000")
-
 # Create experiment
 mlflow.set_experiment("Recommender hyperparameter tuning")
 
@@ -32,7 +29,7 @@ hyperparameters = [{"embedding_dim": emb_dim, "learning_rate": lr} for emb_dim, 
 
 def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
     for hyperparams in hyperparameters:
-        with mlflow.start_run(run_name="harvest run 1") as run:
+        with mlflow.start_run() as run:
 
             run_id = run.info.run_id
             experiment_id = run.info.experiment_id

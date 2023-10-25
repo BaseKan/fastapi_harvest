@@ -30,12 +30,9 @@ In order to run the MLFlow UI, one needs to specify the gunicorn config file.'
 ```commandline
 mlflow ui --gunicorn-opts "-c gunicorn_mlflow.conf.py"  
 ```
-  
-# Serve model 
-In order to serve a registred model:
+In case the MLFlow UI server does not start, kill all processes running on port 5000:
 ```commandline
-mlflow models serve -m runs:/<RUN_ID>/model_name -h 0.0.0.0 -p <PORT> --env-manager=local
-mlflow models serve -m runs:/2e9f42abdd1747ef94ac77937d686b58/model -h 0.0.0.0 -p 1234 --no-conda
+sudo kill -9 `sudo lsof -t -i:5000`
 ```
 
 # Steps in MLOps
