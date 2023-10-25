@@ -42,6 +42,8 @@ def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
                 "embedding_dim": hyperparams["embedding_dim"],
                 "learning_rate": hyperparams["learning_rate"],
                 "epochs": epochs,
+                "dataset_first_rating_id": dataset_first_rating_id,
+                "dataset_last_rating_id": dataset_last_rating_id
             })
 
             users, movies = get_vocabulary_datasets(data_loader=data_loader)
@@ -103,6 +105,8 @@ def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
 
 
 if __name__ == '__main__':
+
+    
     tune_hyperparams(dataset_first_rating_id=0, 
                      dataset_last_rating_id=50000, 
                      epochs=5)

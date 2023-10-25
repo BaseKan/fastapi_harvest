@@ -6,12 +6,21 @@ import tensorflow_recommenders as tfrs
 import numpy as np
 from model_api.models.retrieval_model import RetrievalModel
 import keras
+import logging
 
 from model_api.mlflow.model_serving import load_registered_retrieval_model
 from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
 from model_api.dependencies import data_loader
-from model_api.constants import RETRIEVAL_CHECKPOINT_PATH
+from model_api.constants import (RETRIEVAL_CHECKPOINT_PATH, 
+                                 RETRAINING_EXPERIMENT_NAME, 
+                                 MONITORING_EXPERIMENT_NAME, 
+                                 MODEL_NAME)
 from model_api.mlflow.model_serving import register_model
+from model_api.mlflow.utils import get_latest_registered_model
+
+
+logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO)
 
 
 def check_for_retraining(experiment_name_monitoring: str, 
@@ -22,26 +31,21 @@ def check_for_retraining(experiment_name_monitoring: str,
                          new_experiment_name: str, 
                          epochs: int):
 
-    current_experiment=dict(mlflow.get_experiment_by_name(experiment_name_monitoring))
-    experiment_id=current_experiment['experiment_id']
+    current_monitoring_experiment=dict(mlflow.get_experiment_by_name(experiment_name_monitoring))
+    monitoring_experiment_id=current_monitoring_experiment['experiment_id']
 
+    # Get worst performing batch in the monitoring experiment
     current_performance_run = mlflow.search_runs(
-    experiment_ids=experiment_id,
+    experiment_ids=monitoring_experiment_id,
     order_by=["metrics.top_k_100 ASC"]
     ).loc[0]
 
     if current_performance_run["metrics.top_k_100"] <= threshold:
-
-        # List all registered models
-        filtered_string = f"name='{current_model_name}'"
+        logger.info("Current performance under threshold. Retraining triggered.")
 
         # Search for latest registered model and order by creation timestamp
-        registered_models = mlflow.search_registered_models(filter_string=filtered_string, 
-                                                            order_by=["creation_timestamp"])
-
-        # Filter for models with a current stage of "Production"
-        production_models = [model for model in registered_models if model.latest_versions[0].current_stage == "Production"]
-        run_id_current_model = production_models[0].latest_versions[0].run_id
+        registered_model = get_latest_registered_model(model_name=current_model_name, stage="Production")
+        run_id_current_model = registered_model.run_id
             
         run_data_dict = mlflow.get_run(run_id_current_model).data.to_dictionary()
         # Get learning rate and embedding dimension
@@ -57,6 +61,15 @@ def check_for_retraining(experiment_name_monitoring: str,
 
             run_id = run.info.run_id
             experiment_id = run.info.experiment_id
+
+            # Log parameters
+            mlflow.log_params({
+                "embedding_dim": embedding_dimension,
+                "learning_rate": learning_rate,
+                "epochs": epochs,
+                "dataset_first_rating_id": dataset_first_rating_id,
+                "dataset_last_rating_id": dataset_last_rating_id
+            })
 
             users, movies = get_vocabulary_datasets(data_loader=data_loader)
             user_model, movie_model = create_embedding_models(users=users, 
@@ -91,8 +104,8 @@ def check_for_retraining(experiment_name_monitoring: str,
             # Register and replace model if performance is better than current model on the same test set
             current_evalution_result = current_retrieval_model.evaluate(cached_test, return_dict=True)
 
-            print(f"Current model test result top_100: {current_evalution_result['factorized_top_k/top_100_categorical_accuracy']}")
-            print(f"New model test result top_100: {new_evaluation_result['factorized_top_k/top_100_categorical_accuracy']}")
+            logger.info(f"Current model test result top_100: {current_evalution_result['factorized_top_k/top_100_categorical_accuracy']}")
+            logger.info(f"New model test result top_100: {new_evaluation_result['factorized_top_k/top_100_categorical_accuracy']}")
 
             if new_evaluation_result["factorized_top_k/top_100_categorical_accuracy"] > current_evalution_result["factorized_top_k/top_100_categorical_accuracy"]:
                 # Remove prefix from evaluation results 
@@ -125,15 +138,15 @@ def check_for_retraining(experiment_name_monitoring: str,
                 mlflow.tensorflow.log_model(model=index, artifact_path="model")
 
                 # Register new trained model
-                register_model(model_name="harvest_recommender", run_id=run_id)
+                register_model(model_name=current_model_name, run_id=run_id)
 
 
 if __name__ == "__main__":
-    check_for_retraining(experiment_name_monitoring="model monitoring", 
-                         current_model_name="harvest_recommender", 
-                         threshold=0.35, 
+    check_for_retraining(experiment_name_monitoring=MONITORING_EXPERIMENT_NAME, 
+                         current_model_name=MODEL_NAME, 
+                         threshold=0.5, 
                          dataset_first_rating_id=0,
-                         dataset_last_rating_id=80000,
-                         new_experiment_name="retraining experiment",
+                         dataset_last_rating_id=90000,
+                         new_experiment_name=RETRAINING_EXPERIMENT_NAME,
                          epochs=5)
     

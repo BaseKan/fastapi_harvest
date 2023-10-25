@@ -37,3 +37,12 @@ In order to serve a registred model:
 mlflow models serve -m runs:/<RUN_ID>/model_name -h 0.0.0.0 -p <PORT> --env-manager=local
 mlflow models serve -m runs:/2e9f42abdd1747ef94ac77937d686b58/model -h 0.0.0.0 -p 1234 --no-conda
 ```
+
+# Steps in MLOps
+1. Hypertune model and log with MLFlow (Tracking API)
+2. Register best performing model on test set with MLFlow (Model Registry API)
+3. Load latest model for the FastAPI from Production Stage with MLFlow
+4. Perform model monitoring with MLFlow, looping over different batches
+5. Retrain if performance of current model hits a threshold
+6. Register new (stateful) trained model if it outperforms the current model on a test set
+7. Restart FastAPI

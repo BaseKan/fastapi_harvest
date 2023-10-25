@@ -1,4 +1,5 @@
 import os
+import logging
 
 from mlflow.tracking import MlflowClient
 import mlflow
@@ -8,8 +9,13 @@ import tensorflow as tf
 from model_api.dataloaders import DataLoader
 from model_api.models.embedding_models import get_vocabulary_datasets, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
-from model_api.constants import RETRIEVAL_CHECKPOINT_PATH
+from model_api.constants import RETRIEVAL_CHECKPOINT_PATH, MODEL_NAME
 from model_api.predictors.tensorflow_predictor import TensorflowPredictor
+from model_api.mlflow.utils import get_latest_registered_model
+
+
+logger = logging.getLogger()
+logging.basicConfig(level=logging.INFO)
 
 
 def register_best_model(model_name: str, experiment_name: str, metric: str, stage: str = "Production"):
@@ -20,7 +26,6 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
     experiment_id=current_experiment['experiment_id']
 
     df = mlflow.search_runs([experiment_id], order_by=[f"metrics.{metric} DESC"])
-    print(df[[f"metrics.{metric}", "run_id"]])
 
     best_run_id = df.at[0, "run_id"]
 
@@ -33,13 +38,13 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
     latest_versions = client.get_latest_versions(name=model_name)
 
     for version in latest_versions:
-        print(f"version: {version.version}, stage: {version.current_stage}")
+        logger.info(f"version: {version.version}, stage: {version.current_stage}")
 
     # Move new model into production stage and move old model to archived stage
     client.transition_model_version_stage(
         name=model_name,
         stage=stage,
-        version=version.version,
+        version=latest_versions[0].version,
         archive_existing_versions=True
     )
 
@@ -54,15 +59,16 @@ def register_model(model_name: str, run_id: str, stage: str = "Production"):
 
     # Get latest version
     latest_versions = client.get_latest_versions(name=model_name)
+    logger.info(f"Latest version of {model_name} model: {latest_versions[0].version}")
 
     for version in latest_versions:
-        print(f"version: {version.version}, stage: {version.current_stage}")
+        logger.info(f"version: {version.version}, stage: {version.current_stage}")
 
     # Move new model into production stage and move old model to archived stage
     client.transition_model_version_stage(
         name=model_name,
         stage=stage,
-        version=version.version,
+        version=latest_versions[0].version,
         archive_existing_versions=True
     )
 
@@ -70,22 +76,20 @@ def register_model(model_name: str, run_id: str, stage: str = "Production"):
 def load_registered_retrieval_model(model_name: str, stage: str = "Production") -> tf.keras.Model:
     client = MlflowClient()
 
-    # List all registered models
-    filtered_string = f"name='{model_name}'"
-
     # Search for latest registered model and order by creation timestamp
-    registered_models = mlflow.search_registered_models(filter_string=filtered_string, 
-                                                        order_by=["creation_timestamp"])
+    registered_model = get_latest_registered_model(model_name=MODEL_NAME, stage=stage)
 
-    # Filter for models with a current stage of "Production"
-    production_models = [model for model in registered_models if model.latest_versions[0].current_stage == stage]
-    source_path = f"./mlruns{production_models[0].latest_versions[0].source.split('mlruns', 1)[1]}"
+    logger.info(f"Source path of retrieval model: {registered_model.source}")
+    source_path = f"./mlruns{registered_model.source.split('mlruns', 1)[1]}"
+
+    logger.info(f"Latest version of {model_name} model in Production stage: {registered_model.version}")
+
     logged_model_base_path = source_path.rsplit("/model", 1)[0]
 
-    run_id = production_models[0].latest_versions[0].run_id
+    run_id = registered_model.run_id
 
-    print(f"Source path={source_path}")
-    print(f"Run id={run_id}")
+    logger.info(f"Run id of registered model: {run_id}")
+    logger.info(f"Source path of registered model: {source_path}")
     
     # extract params/metrics data for run_id in a single dict 
     run_data_dict = client.get_run(run_id).data.to_dictionary()
@@ -108,39 +112,18 @@ def load_registered_retrieval_model(model_name: str, stage: str = "Production") 
 
 
 def load_registered_predictor_model(model_name: str, stage: str = "Production") -> TensorflowPredictor:
-    # List all registered models
-    filtered_string = f"name='{model_name}'"
 
     # Search for latest registered model and order by creation timestamp
-    registered_models = mlflow.search_registered_models(filter_string=filtered_string, 
-                                                        order_by=["creation_timestamp"])
+    registered_model = get_latest_registered_model(model_name=MODEL_NAME, stage=stage)
 
-    # Filter for models with a current stage of "Production"
-    production_models = [model for model in registered_models if model.latest_versions[0].current_stage == stage]
-    source_path = f"./mlruns{production_models[0].latest_versions[0].source.split('mlruns', 1)[1]}/data/model"
+    logger.info(f"Registered model info: {registered_model}")
 
-    predictor = TensorflowPredictor(model_path=source_path)
+    source_path = f"./mlruns{registered_model.source.split('mlruns', 1)[1]}/data/model"
+    logger.info(f"Source path of registered model: {source_path}")
+    logger.info(f"Latest version of {model_name} model in Production stage: {registered_model.version}")
 
-    print(predictor.predict({"user_id": ["151"]}))
-
-    return predictor
-
-
-
-
-
-
-
+    return TensorflowPredictor(model_path=source_path)
 
 
 if __name__ == "__main__":
-    # register_best_model(model_name="harvest_recommender", 
-    #                     experiment_name="Recommender hyperparameter tuning", 
-    #                     metric="top_100_categorical_accuracy"
-    #                     )
-
-    load_registered_predictor_model(model_name="harvest_recommender", 
-            #    experiment_name="Recommender hyperparameter tuning", 
-               stage="Production"
-               )
-    
+    load_registered_predictor_model(model_name=MODEL_NAME)

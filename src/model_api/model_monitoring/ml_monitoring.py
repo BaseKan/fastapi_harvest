@@ -4,25 +4,20 @@ import mlflow
 from model_api.mlflow.model_serving import load_registered_predictor_model, load_registered_retrieval_model
 from model_api.dataloaders import DataLoader
 from model_api.models.embedding_models import get_vocabulary_datasets
+from model_api.constants import MODEL_NAME
+from model_api.mlflow.utils import get_latest_registered_model
 
 
-def monitor_performance(model_name: str, experiment_name: str):
+def monitor_performance(model_name: str, experiment_name: str, stage: str = "Production"):
 
-    recommender_model = load_registered_retrieval_model(model_name="harvest_recommender", stage="Production")
+    recommender_model = load_registered_retrieval_model(model_name=model_name, stage=stage)
 
     # Create experiment
     mlflow.set_experiment(experiment_name)
 
-    # List all registered models
-    filtered_string = f"name='{model_name}'"
-
     # Search for latest registered model and order by creation timestamp
-    registered_models = mlflow.search_registered_models(filter_string=filtered_string, 
-                                                        order_by=["creation_timestamp"])
-
-    # Filter for models with a current stage of "Production"
-    production_models = [model for model in registered_models if model.latest_versions[0].current_stage == "Production"]
-    run_id = production_models[0].latest_versions[0].run_id
+    registered_model = get_latest_registered_model(model_name=MODEL_NAME, stage=stage)
+    run_id_current_model = registered_model.run_id
 
     # Set experiment batches dates
     experiment_batches = [
@@ -36,8 +31,10 @@ def monitor_performance(model_name: str, experiment_name: str):
     for batch in experiment_batches:
         with mlflow.start_run(run_name="model monitoring run") as run:
 
-            mlflow.log_param("model_run_id", run_id)
-            mlflow.log_param("batches", batch[1])
+            mlflow.log_param("model_run_id", run_id_current_model)
+            mlflow.log_param("first_rating_id", batch[0])
+            mlflow.log_param("last_rating_id", batch[1])
+            mlflow.log_param("registered_model_name", model_name)
 
             data = DataLoader()
             vocabulary = get_vocabulary_datasets(data_loader=data)
@@ -59,4 +56,5 @@ def monitor_performance(model_name: str, experiment_name: str):
 
 
 if __name__ == "__main__":
-    monitor_performance(model_name="harvest_recommender", experiment_name="model monitoring")
+
+    monitor_performance(model_name=MODEL_NAME, experiment_name="Model monitoring")
