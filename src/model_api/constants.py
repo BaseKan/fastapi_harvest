@@ -8,3 +8,4 @@ HYPERTUNING_EXPERIMENT_NAME = 'Recommender hyperparameter tuning'
 MONITORING_EXPERIMENT_NAME = 'Model monitoring'
 RETRAINING_EXPERIMENT_NAME = "Retraining"
 MODEL_METRIC = "top_100_categorical_accuracy"
+DEFAULT_MODEL_VERSION = 0

@@ -7,9 +7,16 @@ pip install -e .
 
 # Run
 
+Debugging:
 ```commandline
 uvicorn model_api.main:app --reload
 ```
+
+Production:
+```commandline
+sh start_api.sh
+```
+
 
 # Run met docker
 Ga naar de directory met dockerfile

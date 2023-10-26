@@ -7,9 +7,9 @@ import mlflow.keras
 import tensorflow as tf
 
 from model_api.dataloaders import DataLoader
-from model_api.models.embedding_models import get_vocabulary_datasets, create_embedding_models
-from model_api.models.retrieval_model import RetrievalModel
-from model_api.constants import RETRIEVAL_CHECKPOINT_PATH, MODEL_NAME
+from model_api.models.retrieval_model import init_retrieval_model_checkpoint
+from model_api.constants import MODEL_NAME
+from model_api.utils.restart_api import restart_api
 from model_api.predictors.tensorflow_predictor import TensorflowPredictor
 from model_api.mlops.utils import get_latest_registered_model
 
@@ -47,6 +47,7 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
         version=latest_versions[0].version,
         archive_existing_versions=True
     )
+    restart_api()
 
 
 def register_model(model_name: str, run_id: str, stage: str = "Production"):
@@ -71,9 +72,11 @@ def register_model(model_name: str, run_id: str, stage: str = "Production"):
         version=latest_versions[0].version,
         archive_existing_versions=True
     )
+    restart_api()
 
 
-def load_registered_retrieval_model(model_name: str, stage: str = "Production") -> tf.keras.Model:
+def load_registered_retrieval_model(model_name: str, stage: str = "Production",
+                                    data_loader: DataLoader | None = None) -> tf.keras.Model:
     client = MlflowClient()
 
     # Search for latest registered model and order by creation timestamp
@@ -97,16 +100,13 @@ def load_registered_retrieval_model(model_name: str, stage: str = "Production") 
     learning_rate = run_data_dict["params"]["learning_rate"]
     embedding_dimension = run_data_dict["params"]["embedding_dim"]
 
-    data = DataLoader()
-    vocabulary = get_vocabulary_datasets(data_loader=data)
+    if not data_loader:
+        data_loader = DataLoader()
 
-    users, movies = vocabulary
-    user_model, movie_model = create_embedding_models(users, movies, embedding_dimension=int(embedding_dimension))
-    movies_ds = tf.data.Dataset.from_tensor_slices(dict(movies)).map(lambda x: x['movie_title'])
-    retrieval_model = RetrievalModel(user_model, movie_model, movies_ds)
-
-    retrieval_model.load_weights(filepath=os.path.join(logged_model_base_path, RETRIEVAL_CHECKPOINT_PATH))
-    retrieval_model.compile(optimizer=tf.keras.optimizers.Adagrad(learning_rate=float(learning_rate)))
+    retrieval_model = init_retrieval_model_checkpoint(model_base_path=logged_model_base_path,
+                                                      data_loader=data_loader,
+                                                      embedding_dimension=embedding_dimension,
+                                                      learning_rate=learning_rate)
 
     return retrieval_model
 

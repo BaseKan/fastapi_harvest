@@ -1,17 +1,19 @@
 import os
-import json
-
 import pandas as pd
 import tensorflow as tf
 import tensorflow_recommenders as tfrs
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks
 
 from model_api.dataloaders import DataLoader
 from model_api.dependencies import get_data, get_full_model, get_vocabulary_dependency
+from model_api.utils.restart_api import restart_api
 
 router = APIRouter(prefix="/monitor",
                    tags=["monitor"],
                    responses={404: {"description": "Not Found"}})
+
+
+
 
 
 @router.get("/evaluate")
@@ -32,3 +34,8 @@ async def get_model_evaluation(first_rating_id: int, last_rating_id: int,
 
     return {"message": f"Model Performance on test data: {str(model_performance)}"}
 
+
+@router.get("/reload_models")
+async def reload_models(background_tasks: BackgroundTasks):
+    background_tasks.add_task(restart_api)
+    return {"message": "Reloading models, restarting API."}

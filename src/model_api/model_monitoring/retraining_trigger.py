@@ -5,7 +5,6 @@ import tensorflow as tf
 import tensorflow_recommenders as tfrs
 import numpy as np
 from model_api.models.retrieval_model import RetrievalModel
-import keras
 import logging
 
 from model_api.mlops.model_serving import load_registered_retrieval_model
