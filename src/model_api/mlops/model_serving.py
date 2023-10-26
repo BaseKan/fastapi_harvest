@@ -11,7 +11,7 @@ from model_api.models.embedding_models import get_vocabulary_datasets, create_em
 from model_api.models.retrieval_model import RetrievalModel
 from model_api.constants import RETRIEVAL_CHECKPOINT_PATH, MODEL_NAME
 from model_api.predictors.tensorflow_predictor import TensorflowPredictor
-from model_api.mlflow.utils import get_latest_registered_model
+from model_api.mlops.utils import get_latest_registered_model
 
 
 logger = logging.getLogger()

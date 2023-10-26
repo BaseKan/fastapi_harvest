@@ -9,8 +9,6 @@ from model_api.models.retrieval_model import RetrievalModel
 from model_api.dependencies import data_loader
 from model_api.constants import MODEL_DIR, RETRIEVAL_CHECKPOINT_PATH
 
-# See: https://www.tensorflow.org/recommenders/examples/basic_retrieval
-
 
 def retrain(from_checkpoint: bool = True, epochs: int = 3,
             dataset_first_rating_id: int = 0,

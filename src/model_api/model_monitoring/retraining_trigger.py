@@ -8,15 +8,15 @@ from model_api.models.retrieval_model import RetrievalModel
 import keras
 import logging
 
-from model_api.mlflow.model_serving import load_registered_retrieval_model
+from model_api.mlops.model_serving import load_registered_retrieval_model
 from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
 from model_api.dependencies import data_loader
 from model_api.constants import (RETRIEVAL_CHECKPOINT_PATH, 
                                  RETRAINING_EXPERIMENT_NAME, 
                                  MONITORING_EXPERIMENT_NAME, 
                                  MODEL_NAME)
-from model_api.mlflow.model_serving import register_model
-from model_api.mlflow.utils import get_latest_registered_model
+from model_api.mlops.model_serving import register_model
+from model_api.mlops.utils import get_latest_registered_model
 
 
 logger = logging.getLogger()

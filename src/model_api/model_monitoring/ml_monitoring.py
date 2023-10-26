@@ -1,11 +1,11 @@
 import tensorflow as tf
 import mlflow
 
-from model_api.mlflow.model_serving import load_registered_predictor_model, load_registered_retrieval_model
+from model_api.mlops.model_serving import load_registered_predictor_model, load_registered_retrieval_model
 from model_api.dataloaders import DataLoader
 from model_api.models.embedding_models import get_vocabulary_datasets
 from model_api.constants import MODEL_NAME
-from model_api.mlflow.utils import get_latest_registered_model
+from model_api.mlops.utils import get_latest_registered_model
 
 
 def monitor_performance(model_name: str, experiment_name: str, stage: str = "Production"):

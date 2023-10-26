@@ -1,5 +1,5 @@
-from model_api.mlflow.hyperparamater_tuning import tune_hyperparams
-from model_api.mlflow.model_serving import register_best_model
+from model_api.mlops.hyperparamater_tuning import tune_hyperparams
+from model_api.mlops.model_serving import register_best_model
 from model_api.constants import MODEL_NAME, HYPERTUNING_EXPERIMENT_NAME, MODEL_METRIC
 
 
