@@ -5,6 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from model_api.routers import user_data_router, movie_data_router, model_monitoring_router
+from model_api.dependencies import lifespan
 
 if not os.path.isdir("logs"):
     os.mkdir("logs")
@@ -16,7 +17,7 @@ logging.basicConfig(filename="./logs/logfile.log",
 
 logger = logging.getLogger()
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(user_data_router.router)
 app.include_router(movie_data_router.router)

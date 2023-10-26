@@ -13,3 +13,5 @@ passlib[Bcrypt]
 python-jose
 python-multipart
 tensorflow-recommenders
+mlflow
+evidently
