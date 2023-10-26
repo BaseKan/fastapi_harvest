@@ -10,7 +10,7 @@ echo "Restarting FastAPI server"
 else
 echo "No such process. Starting new FastAPI server"
 fi
-nohup /Users/basdekan/PycharmProjects/harvest/fastapi_harvest/venv/bin/uvicorn model_api.main:app --reload &
+nohup uvicorn model_api.main:app --reload &
 
 
 #if [ -f api.pid ] && ps -p $(cat api.pid) > /dev/null

@@ -1,14 +1,11 @@
 #!/bin/bash
 #cd /code/
-PID=$(ps aux | grep 'uvicorn model_api.main:app --reload' | grep -v grep | awk {'print $2'} | xargs)
+PID=$(lsof -t -i:8000)
 if [ "$PID" != "" ]
 then
 kill -9 $PID
-PID=$(ps aux | grep 'venv/bin/python -c from multiprocessing' | grep -v grep | awk {'print $2'} | xargs)
-if [ "$PID" != "" ]
-then
-kill -9 $PID
-fi
+sleep 2
+echo "" > nohup.out
 echo "Stopping FastAPI server"
 else
 echo "No such process."
