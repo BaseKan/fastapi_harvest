@@ -9,7 +9,7 @@ if __name__ == "__main__":
                      dataset_last_rating_id=50000, 
                      epochs=5)
     
-    # register_best_model(model_name=MODEL_NAME, 
-    #                     experiment_name=HYPERTUNING_EXPERIMENT_NAME, 
-    #                     metric=MODEL_METRIC)
+    register_best_model(model_name=MODEL_NAME, 
+                        experiment_name=HYPERTUNING_EXPERIMENT_NAME, 
+                        metric=MODEL_METRIC)
     
