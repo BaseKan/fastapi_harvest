@@ -1,5 +1,7 @@
 import os
+import subprocess
 
 
 def restart_api():
-    os.system('sh start_api.sh')
+    subprocess.Popen(['sh', 'start_api.sh'], start_new_session=True)
+    #os.system('sh start_api.sh &')
