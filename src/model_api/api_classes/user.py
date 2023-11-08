@@ -11,7 +11,7 @@ class UserResponseModel(BaseModel):
     user_zip_code: str
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "user_id": 1,
                 "bucketized_user_age": 20.0,

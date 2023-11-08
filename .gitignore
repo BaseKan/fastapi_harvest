@@ -132,5 +132,6 @@ logs/
 data/
 downloads/
 notebooks/
-mlruns/
 workspace/
+mlruns/
+nohup.out
