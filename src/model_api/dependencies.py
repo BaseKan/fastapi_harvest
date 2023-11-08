@@ -1,7 +1,5 @@
-import json
 import os.path
 import pandas as pd
-import tensorflow as tf
 import tensorflow_recommenders as tfrs
 from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI

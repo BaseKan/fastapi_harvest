@@ -6,7 +6,7 @@ class RecommendationsResponseModel(BaseModel):
     movies: list[str]
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "user_id": "1",
                 "movies": ["Home Alone (1990)", "Titanic (1997)"]

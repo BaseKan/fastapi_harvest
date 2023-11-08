@@ -6,8 +6,10 @@ import tensorflow_recommenders as tfrs
 
 from model_api.models.embedding_models import get_vocabulary_datasets, process_training_data, create_embedding_models
 from model_api.models.retrieval_model import RetrievalModel
-from model_api.dependencies import data_loader
 from model_api.constants import MODEL_DIR, RETRIEVAL_CHECKPOINT_PATH
+from model_api.dependencies import data_loader
+
+# See: https://www.tensorflow.org/recommenders/examples/basic_retrieval
 
 
 def retrain(from_checkpoint: bool = True, epochs: int = 3,
