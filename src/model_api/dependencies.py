@@ -5,6 +5,7 @@ from model_api.predictors import TensorflowPredictor
 from model_api.constants import MODEL_VERSION, MODEL_DIR
 
 predictor = TensorflowPredictor(model_path=os.path.join(MODEL_DIR, str(MODEL_VERSION), 'index'))
+
 data_loader = DataLoader()
 
 

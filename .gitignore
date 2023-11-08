@@ -131,3 +131,5 @@ dmypy.json
 logs/
 .idea/
 data/
+mlruns/
+nohup.out
