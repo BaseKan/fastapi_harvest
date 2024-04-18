@@ -21,10 +21,17 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
     client = MlflowClient()
 
     # TODO: Search for the best experiment and register the model
+    # Search for all the runs in the experiment with the given experiment ID
+    current_experiment=dict(mlflow.get_experiment_by_name(experiment_name))
+    experiment_id=current_experiment['experiment_id']
 
+    df = mlflow.search_runs([experiment_id], order_by=[f"metrics.{metric} DESC"])
+    
     # TODO: Get latest version for the model
+    # latest_versions = client.get_latest_versions(name=model_name)
 
     # TODO: Move new model into production stage and move old model to archived stage
+    client.transition_model_version_stage(...)
 
     # We restart the api to trigger reloading of the model
     restart_api()
@@ -33,7 +40,11 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
 def register_model(model_name: str, run_id: str, stage: str = "Production"):
     client = MlflowClient()
 
-    ...
+    mlflow.register_model(...)
+    
+    latest_versions = client.get_latest_versions(name=model_name)
+    
+    client.transition_model_version_stage(...)
 
     restart_api()
 
@@ -50,11 +61,11 @@ def load_registered_retrieval_model(model_name: str, stage: str = "Production",
     logged_model_base_path = ...
 
     run_id = registered_model.run_id
-
     
     # TODO: extract params/metrics data for run_id in a single dict
+    run_data_dict = client.get_run(run_id).data.to_dictionary()
     # TODO: Get learning rate and embedding dimension
-    learning_rate = ...
+    learning_rate = run_data_dict["params"]["learning_rate"]
     embedding_dimension = ...
 
     if not data_loader:
