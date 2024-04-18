@@ -34,10 +34,7 @@ def check_for_retraining(experiment_name_monitoring: str,
     monitoring_experiment_id=current_monitoring_experiment['experiment_id']
 
     # Get worst performing batch in the monitoring experiment
-    current_performance_run = mlflow.search_runs(
-    experiment_ids=monitoring_experiment_id,
-    order_by=["metrics.top_k_100 ASC"]
-    ).loc[0]
+    current_performance_run = mlflow.search_runs(...)
 
     if current_performance_run["metrics.top_k_100"] <= threshold:
         logger.info("Current performance under threshold. Retraining triggered.")
@@ -46,16 +43,19 @@ def check_for_retraining(experiment_name_monitoring: str,
         registered_model = get_latest_registered_model(model_name=current_model_name, stage="Production")
         run_id_current_model = registered_model.run_id
             
-        run_data_dict = mlflow.get_run(run_id_current_model).data.to_dictionary()
+        # Get data dict for MLFlow run
+        # Hint: use mlflow.get_run(...)
+        run_data_dict = ...
         # Get learning rate and embedding dimension
-        learning_rate = float(run_data_dict["params"]["learning_rate"])
-        embedding_dimension = int(run_data_dict["params"]["embedding_dim"])
+        learning_rate = ...
+        embedding_dimension = ...
 
         # Load current model including weights
         current_retrieval_model = load_registered_retrieval_model(model_name=current_model_name)
 
         mlflow.set_experiment(new_experiment_name)
 
+        # Create new MLFlow run
         with mlflow.start_run() as run:
 
             run_id = run.info.run_id
@@ -97,16 +97,13 @@ def check_for_retraining(experiment_name_monitoring: str,
                 save_best_only=True)
             
             # Fit new retrieval model with stateful weights
-            new_retrieval_model.fit(cached_train, epochs=epochs, callbacks=retrieval_checkpoint_callback)
-            new_evaluation_result = new_retrieval_model.evaluate(cached_test, return_dict=True)
-
+            new_retrieval_model.fit(...)
+            # TODO: Also evaluate the current best model
+            new_evaluation_result = ...
+            current_evaluation_result = ...
             # Register and replace model if performance is better than current model on the same test set
-            current_evalution_result = current_retrieval_model.evaluate(cached_test, return_dict=True)
 
-            logger.info(f"Current model test result top_100: {current_evalution_result['factorized_top_k/top_100_categorical_accuracy']}")
-            logger.info(f"New model test result top_100: {new_evaluation_result['factorized_top_k/top_100_categorical_accuracy']}")
-
-            if new_evaluation_result["factorized_top_k/top_100_categorical_accuracy"] > current_evalution_result["factorized_top_k/top_100_categorical_accuracy"]:
+            if new_evaluation_result["factorized_top_k/top_100_categorical_accuracy"] > current_evaluation_result["factorized_top_k/top_100_categorical_accuracy"]:
                 # Remove prefix from evaluation results 
                 evaluation_results_new = {}
                 prefix_to_remove = 'factorized_top_k/'
@@ -117,8 +114,10 @@ def check_for_retraining(experiment_name_monitoring: str,
                     else:
                         new_key = key
                     evaluation_results_new[new_key] = value
-                # Log metrics
-                mlflow.log_metrics(evaluation_results_new)
+                #TODO: Log metrics
+                mlflow.log_metrics(...)
+                
+                 #TODO: Initialize index
 
                 index = tfrs.layers.factorized_top_k.BruteForce(new_retrieval_model.user_model) 
                 # recommends movies out of the entire movies dataset.
@@ -133,8 +132,8 @@ def check_for_retraining(experiment_name_monitoring: str,
                 _, titles = index({k: np.array(v) for k, v in input_features.items()})
                 print(titles)
 
-                # Log model
-                mlflow.tensorflow.log_model(model=index, artifact_path="model")
+                #TODO: Log model
+
 
                 # Register new trained model
                 register_model(model_name=current_model_name, run_id=run_id)
