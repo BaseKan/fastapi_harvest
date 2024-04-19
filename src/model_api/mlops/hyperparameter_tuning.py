@@ -18,6 +18,14 @@ client = MlflowClient()
 # Create experiment
 mlflow.set_experiment("Recommender hyperparameter tuning")
 
+# Hyperparameter search space
+embedding_dimension = [16, 32, 64, 128]
+learning_rate = [0.001, 0.01, 0.1]
+
+# Create Cartesian product of hyperparams
+hyperparameter_combinations = list(itertools.product(embedding_dimension, learning_rate))
+hyperparameters = [{"embedding_dim": emb_dim, "learning_rate": lr} for emb_dim, lr in hyperparameter_combinations]
+
 
 def tune_hyperparams(dataset_first_rating_id, dataset_last_rating_id, epochs):
     for hyperparams in hyperparameters:
