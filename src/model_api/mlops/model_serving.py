@@ -35,7 +35,7 @@ def register_best_model(model_name: str, experiment_name: str, metric: str, stag
         )
 
     # Get latest version
-    latest_versions = client.get_latest_versions(name=model_name)
+    latest_versions = client.get_latest_versions(name=model_name, stages=["None"])
 
     for version in latest_versions:
         logger.info(f"version: {version.version}, stage: {version.current_stage}")
@@ -59,7 +59,7 @@ def register_model(model_name: str, run_id: str, stage: str = "Production"):
         )
 
     # Get latest version
-    latest_versions = client.get_latest_versions(name=model_name)
+    latest_versions = client.get_latest_versions(name=model_name, stages=["None"])
     logger.info(f"Latest version of {model_name} model: {latest_versions[0].version}")
 
     for version in latest_versions:
