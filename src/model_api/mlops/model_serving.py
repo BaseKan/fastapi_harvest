@@ -53,7 +53,7 @@ def register_model(model_name: str, run_id: str, stage: str = "Production"):
     mlflow.register_model(model_uri=f"runs:/{run_id}/model", name=model_name)
 
     # Get latest version
-    latest_versions = client.get_latest_versions(name=model_name)
+    latest_versions = client.get_latest_versions(name=model_name, stages=["None"])
     logger.info(f"Latest version of {model_name} model: {latest_versions[0].version}")
 
     for version in latest_versions:
