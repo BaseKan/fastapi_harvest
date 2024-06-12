@@ -2,7 +2,6 @@ import itertools
 import os
 
 import mlflow
-from mlflow.tracking import MlflowClient
 import tensorflow as tf
 import tensorflow_recommenders as tfrs
 import numpy as np
@@ -12,8 +11,6 @@ from model_api.models.retrieval_model import RetrievalModel
 from model_api.constants import RETRIEVAL_CHECKPOINT_PATH
 from model_api.dependencies import data_loader
 
-
-client = MlflowClient()
 
 # Create experiment
 mlflow.set_experiment("Recommender hyperparameter tuning")
