@@ -3,7 +3,8 @@ from enum import Enum
 from fastapi import APIRouter, Depends, Path, Query
 
 from model_api.dataloaders import DataLoader
-from model_api.dependencies import get_data, data_loader
+from model_api.predictors import TensorflowPredictor
+from model_api.dependencies import get_data, data_loader, get_predictor
 
 router = APIRouter(prefix="/movies",
                    tags=["movies"],
@@ -37,3 +38,7 @@ async def query_movies(min_rating: float = 0.0, max_rating: float = 5.0, data: D
         params=[min_rating, max_rating]
     )
     return df.to_dict("records")
+
+# @router.get("/recommend/...")
+# async def recommend_movies(..., predictor: TensorflowPredictor = Depends(get_predictor)):
+#     return ...
